@@ -1,0 +1,26 @@
+name = "village-payment-auth"
+main = "src/index.ts"
+compatibility_date = "2024-07-24"
+
+[env.production]
+kv_namespaces = [
+  { binding = "FAMILIES_KV", id = "your-families-namespace-id" },
+  { binding = "PENDING_KV", id = "your-pending-namespace-id" },
+  { binding = "VENDORS_KV", id = "your-vendors-namespace-id" }
+]
+
+[[env.production.queues.producers]]
+binding = "AUTO_APPROVAL_QUEUE"
+queue = "auto-approval-queue"
+
+[[env.production.queues.consumers]]
+queue = "auto-approval-queue"
+max_batch_size = 10
+max_batch_timeout = 30
+
+[vars]
+VAPID_SUBJECT = "mailto:admin@yourvillage.com"
+
+# Add these as secrets using: wrangler secret put VAPID_PUBLIC_KEY
+# VAPID_PUBLIC_KEY = "your-vapid-public-key"
+# VAPID_PRIVATE_KEY = "your-vapid-private-key"
