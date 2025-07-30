@@ -9,6 +9,10 @@ kv_namespaces = [
   { binding = "VENDORS_KV", id = "your-vendors-namespace-id" }
 ]
 
+d1_databases = [
+  { binding = "DB", database_name = "village_payments", database_id = "8f90582f-f47c-41c3-afe2-9715b069405d" }
+]
+
 [[env.production.queues.producers]]
 binding = "AUTO_APPROVAL_QUEUE"
 queue = "auto-approval-queue"

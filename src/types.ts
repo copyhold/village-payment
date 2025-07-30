@@ -6,6 +6,17 @@ export interface Env {
   VAPID_PUBLIC_KEY: string;
   VAPID_PRIVATE_KEY: string;
   VAPID_SUBJECT: string;
+  DB: D1Database;
+}
+
+export interface D1Database {
+  prepare(sql: string): D1PreparedStatement;
+}
+
+export interface D1PreparedStatement {
+  bind(...params: any[]): D1PreparedStatement;
+  first<T = any>(): Promise<T | null>;
+  run<T = any>(): Promise<T>;
 }
 
 export interface PushSubscription {

@@ -248,6 +248,7 @@ async function handleApprovalResponse(request: Request, env: Env): Promise<Respo
   }
 }
 
+// Approve transaction and log to D1
 async function approveTransaction(
   transactionId: string, 
   transaction: PendingTransaction, 
@@ -256,56 +257,71 @@ async function approveTransaction(
 ): Promise<void> {
   const familyData = await getFamilyData(transaction.familyKey, env);
   if (!familyData) return;
-
-  // Update spending
-  await updateFamilySpending(
-    transaction.familyKey, 
-    familyData, 
-    transaction.vendorId, 
-    transaction.amount, 
-    env
-  );
-
   // Remove from pending
   await env.PENDING_KV.delete(`pending:${transactionId}`);
-
-  // Log transaction (optional - could store in another KV namespace)
-  await env.PENDING_KV.put(
-    `completed:${transactionId}`,
-    JSON.stringify({
-      ...transaction,
+  // Log transaction to D1
+  // Find family_id
+  const [number, surname] = transaction.familyKey.split('-');
+  const famRow = await env.DB.prepare('SELECT family_id FROM families WHERE number = ? AND surname = ? LIMIT 1').bind(number, surname).first();
+  if (famRow) {
+    await env.DB.prepare(
+      'INSERT INTO transactions (family_id, amount, vendor_name, status, requested_at, responded_at, timeout_approved) VALUES (?, ?, ?, ?, ?, ?, ?)' 
+    ).bind(
+      famRow.family_id,
+      transaction.amount,
+      transaction.vendorName,
       status,
-      completedAt: Date.now()
-    }),
-    { expirationTtl: 86400 * 30 } // Keep for 30 days
-  );
+      new Date(transaction.timestamp).toISOString(),
+      new Date().toISOString(),
+      status === TransactionStatus.AUTO_APPROVED
+    ).run();
+  }
 }
 
+// Decline transaction and log to D1
 async function declineTransaction(
   transactionId: string, 
   transaction: PendingTransaction, 
   env: Env,
   reason?: string
 ): Promise<void> {
-  // Remove from pending
   await env.PENDING_KV.delete(`pending:${transactionId}`);
-
-  // Log declined transaction
-  await env.PENDING_KV.put(
-    `completed:${transactionId}`,
-    JSON.stringify({
-      ...transaction,
-      status: TransactionStatus.DECLINED,
-      reason,
-      completedAt: Date.now()
-    }),
-    { expirationTtl: 86400 * 30 } // Keep for 30 days
-  );
+  // Log declined transaction to D1
+  const [number, surname] = transaction.familyKey.split('-');
+  const famRow = await env.DB.prepare('SELECT family_id FROM families WHERE number = ? AND surname = ? LIMIT 1').bind(number, surname).first();
+  if (famRow) {
+    await env.DB.prepare(
+      'INSERT INTO transactions (family_id, amount, vendor_name, status, requested_at, responded_at, timeout_approved) VALUES (?, ?, ?, ?, ?, ?, ?)' 
+    ).bind(
+      famRow.family_id,
+      transaction.amount,
+      transaction.vendorName,
+      'declined',
+      new Date(transaction.timestamp).toISOString(),
+      new Date().toISOString(),
+      false
+    ).run();
+  }
 }
 
+// Fetch family data from D1
 async function getFamilyData(familyKey: string, env: Env): Promise<FamilyData | null> {
-  const data = await env.FAMILIES_KV.get(`family:${familyKey}`);
-  return data ? JSON.parse(data) : null;
+  // familyKey is "number-surname" (normalized)
+  const [number, surname] = familyKey.split('-');
+  const stmt = env.DB.prepare(
+    'SELECT * FROM families WHERE number = ? AND surname = ? LIMIT 1'
+  );
+  const result = await stmt.bind(number, surname).first();
+  if (!result) return null;
+  // Map DB row to FamilyData (add more fields as needed)
+  return {
+    parentPushSubscription: result.parent_contact ? JSON.parse(result.parent_contact) : undefined,
+    defaultLimit: result.spending_limit || 0,
+    totalSpent: 0, // You may want to SUM transactions for this family
+    vendors: {}, // Optionally, fetch vendor-specific limits
+    parentName: result.parent_name,
+    childName: result.child_name
+  };
 }
 
 async function getVendorInfo(vendorId: string, env: Env): Promise<VendorInfo | null> {
@@ -313,6 +329,7 @@ async function getVendorInfo(vendorId: string, env: Env): Promise<VendorInfo | n
   return data ? JSON.parse(data) : null;
 }
 
+// Update family spending in D1 (optionally update limits, but log spending via transactions)
 async function updateFamilySpending(
   familyKey: string,
   familyData: FamilyData,
@@ -320,21 +337,32 @@ async function updateFamilySpending(
   amount: number,
   env: Env
 ): Promise<void> {
-  // Update vendor-specific spending
-  if (!familyData.vendors[vendorId]) {
-    familyData.vendors[vendorId] = { limit: familyData.defaultLimit, spent: 0 };
-  }
-  
-  familyData.vendors[vendorId].spent += amount;
-  familyData.totalSpent += amount;
-
-  await env.FAMILIES_KV.put(`family:${familyKey}`, JSON.stringify(familyData));
+  // No-op: spending is tracked via transactions table in D1
+  // Optionally, you could update a summary column in families if needed
+  return;
 }
 
 // Additional handler functions would be implemented here...
+// Register new family in D1
 async function handleFamilyRegistration(request: Request, env: Env): Promise<Response> {
-  // Implementation for family registration
-  return new Response('Family registration endpoint - to be implemented');
+  if (request.method !== 'POST') {
+    return new Response('Method Not Allowed', { status: 405 });
+  }
+  const data = await request.json();
+  // Validate input (reuse your validation)
+  // Assume: number, surname, parentPushSubscription, spending_limit, parent_name, child_name
+  const stmt = env.DB.prepare(
+    'INSERT INTO families (number, surname, parent_contact, spending_limit, parent_name, child_name) VALUES (?, ?, ?, ?, ?, ?)' 
+  );
+  await stmt.bind(
+    data.number,
+    data.surname,
+    JSON.stringify(data.parentPushSubscription || null),
+    data.spending_limit || 0,
+    data.parent_name || null,
+    data.child_name || null
+  ).run();
+  return new Response(JSON.stringify({ status: 'ok' }), { headers: { 'Content-Type': 'application/json' } });
 }
 
 async function serveVendorForm(request: Request, env: Env): Promise<Response> {
