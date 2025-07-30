@@ -1,20 +1,35 @@
 {
   "name": "village-payment-auth",
-  "version": "1.0.0",
-  "description": "Village payment authorization system with parental controls",
-  "main": "src/index.ts",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler publish",
-    "test": "vitest"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "wrangler pages dev dist",
+    "deploy": "npm run build && wrangler pages deploy dist"
   },
   "dependencies": {
-    "web-push": "^3.6.6"
+    "@hono/zod-validator": "^0.2.2",
+    "@simplewebauthn/browser": "^10.0.0",
+    "@simplewebauthn/server": "^10.0.0",
+    "hono": "^4.5.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.25.1",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.2.1",
     "@cloudflare/workers-types": "^4.20240725.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.39",
+    "tailwindcss": "^3.4.6",
     "typescript": "^5.5.3",
-    "wrangler": "^3.65.1",
-    "vitest": "^2.0.4"
+    "vite": "^5.3.4",
+    "wrangler": "^3.64.0"
   }
 }

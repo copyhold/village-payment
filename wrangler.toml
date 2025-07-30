@@ -1,16 +1,25 @@
 name = "village-payment-auth"
-main = "src/index.ts"
-compatibility_date = "2024-07-24"
+compatibility_date = "2025-07-30"
 
-[env.production]
-kv_namespaces = [
-  { binding = "FAMILIES_KV", id = "your-families-namespace-id" },
-  { binding = "PENDING_KV", id = "your-pending-namespace-id" },
-  { binding = "VENDORS_KV", id = "your-vendors-namespace-id" }
-]
+# This is the entry point for our API worker.
+# All requests to /api/* will be handled by this worker.
+main = "src/worker.ts"
+
+# Configuration for the Vite dev server and Cloudflare Pages.
+# This tells Pages how to handle routing for a single-page application.
+[pages]
+assets = {"not_found_handling" = "single-page-application"}
+
+[vars]
+# These are for the WebAuthn Relying Party (RP) configuration.
+# We'll use localhost for development.
+RP_ID = "localhost"
+RP_NAME = "Village Payment Auth"
+RP_ORIGIN = "http://localhost:5173"
 
 d1_databases = [
   { binding = "DB", database_name = "village_payments", database_id = "8f90582f-f47c-41c3-afe2-9715b069405d" }
+  { binding = "DBAUTH", database_name = "auth-db", database_id = "" }
 ]
 
 [[env.production.queues.producers]]
@@ -22,9 +31,9 @@ queue = "auto-approval-queue"
 max_batch_size = 10
 max_batch_timeout = 30
 
-[vars]
-VAPID_SUBJECT = "mailto:admin@yourvillage.com"
-
-# Add these as secrets using: wrangler secret put VAPID_PUBLIC_KEY
-# VAPID_PUBLIC_KEY = "your-vapid-public-key"
-# VAPID_PRIVATE_KEY = "your-vapid-private-key"
+[env.production]
+kv_namespaces = [
+  { binding = "FAMILIES_KV", id = "your-families-namespace-id" },
+  { binding = "PENDING_KV", id = "your-pending-namespace-id" },
+  { binding = "VENDORS_KV", id = "your-vendors-namespace-id" }
+]
