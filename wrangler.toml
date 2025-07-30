@@ -17,10 +17,15 @@ RP_ID = "localhost"
 RP_NAME = "Village Payment Auth"
 RP_ORIGIN = "http://localhost:5173"
 
-d1_databases = [
-  { binding = "DB", database_name = "village_payments", database_id = "8f90582f-f47c-41c3-afe2-9715b069405d" }
-  { binding = "DBAUTH", database_name = "auth-db", database_id = "" }
-]
+[[d1_databases]]
+binding = "DB"
+database_name = "village_payments"
+database_id = "8f90582f-f47c-41c3-afe2-9715b069405d"
+
+[[d1_databases]]
+binding = "DBAUTH"
+database_name = "auth-db"
+database_id = "your-auth-db-id"  # Replace with actual database ID
 
 [[env.production.queues.producers]]
 binding = "AUTO_APPROVAL_QUEUE"
@@ -32,8 +37,12 @@ max_batch_size = 10
 max_batch_timeout = 30
 
 [env.production]
-kv_namespaces = [
-  { binding = "FAMILIES_KV", id = "your-families-namespace-id" },
-  { binding = "PENDING_KV", id = "your-pending-namespace-id" },
-  { binding = "VENDORS_KV", id = "your-vendors-namespace-id" }
-]
+[[kv_namespaces]]
+binding = "FAMILIES_KV"
+id = "your-families-namespace-id" 
+[[kv_namespaces]]
+binding = "PENDING_KV"
+id = "your-pending-namespace-id"
+[[kv_namespaces]]
+binding = "VENDORS_KV"
+id = "your-vendors-namespace-id"
