@@ -1,5 +1,25 @@
 name = "village-payment-auth"
-compatibility_date = "2025-07-30"
+compatibility_date = "2024-03-20"
+
+# Variables for WebAuthn Relying Party
+[vars]
+RP_ID = "localhost"
+RP_NAME = "Localhost WebAuthn"
+RP_ORIGIN = "http://localhost:5173"
+
+# D1 database binding
+[[d1_databases]]
+binding = "DBAUTH"
+database_name = "auth-db"
+database_id = ""
+
+# Local development server settings
+[dev]
+port = 8788
+
+# Compatibility flags for Cloudflare Workers
+[compatibility_flags]
+node_compat = true
 
 # This is the entry point for our API worker.
 # All requests to /api/* will be handled by this worker.
@@ -25,7 +45,7 @@ database_id = "8f90582f-f47c-41c3-afe2-9715b069405d"
 [[d1_databases]]
 binding = "DBAUTH"
 database_name = "auth-db"
-database_id = "your-auth-db-id"  # Replace with actual database ID
+database_id = "db1a779b-9861-43ac-85b9-87d3c33dfadd"  # Replace with actual database ID
 
 [[env.production.queues.producers]]
 binding = "AUTO_APPROVAL_QUEUE"
