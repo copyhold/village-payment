@@ -1,5 +1,5 @@
 import { createRouter, createRoute, createRootRoute } from '@tanstack/react-router'
-import { App } from './App'
+import App from './App'
 import { HomePage } from './pages/HomePage'
 import { UserPage } from './pages/UserPage'
 import { SellPage } from './pages/SellPage'
