@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { startAuthentication } from '@simplewebauthn/browser';
 import type { PublicKeyCredentialRequestOptionsJSON } from '@simplewebauthn/types';
 
-export function Login() {
+interface LoginProps {
+  onLoginSuccess?: (user: { id: string; username: string }) => void;
+}
+
+export function Login({ onLoginSuccess }: LoginProps) {
   const [username, setUsername] = useState('');
   const [message, setMessage] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
@@ -64,6 +68,11 @@ export function Login() {
       }
       if (verification.verified) {
         setMessage(`Welcome back, ${username}!`);
+        
+        // Call the success callback if provided
+        if (onLoginSuccess && options.userId) {
+          onLoginSuccess({ id: options.userId, username });
+        }
       } else {
         throw new Error(verification.error || 'Login failed.');
       }

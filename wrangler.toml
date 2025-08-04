@@ -12,6 +12,7 @@ assets = { not_found_handling = "single-page-application",run_worker_first = ["/
 RP_ID = "localhost"
 RP_NAME = "Village Payment Auth"
 RP_ORIGIN = "http://localhost:5173"
+JWT_SECRET = "your-super-secret-jwt-key-change-this-in-production"
 
 [[d1_databases]]
 binding = "DB"

@@ -1,6 +1,8 @@
 /// areference types="@cloudflare/workers-types" />
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { sign, verify } from 'hono/jwt';
+import { getCookie } from 'hono/cookie';
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,
@@ -20,6 +22,7 @@ type Env = {
   RP_ID: string;
   RP_NAME: string;
   RP_ORIGIN: string;
+  JWT_SECRET: string;
 };
 
 const app = new Hono<{ Bindings: Env }>();
@@ -274,10 +277,58 @@ app.post('/api/login/finish', async (c) => {
       'UPDATE users SET current_challenge = NULL WHERE id = ?1'
     ).bind(user.id).run();
 
-    return c.json({ verified });
+    // Generate JWT token
+    const payload = {
+      sub: user.id,
+      username: user.username,
+      exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 7), // 7 days
+      iat: Math.floor(Date.now() / 1000),
+    };
+
+    const token = await sign(payload, c.env.JWT_SECRET);
+
+    // Set JWT as HTTP-only cookie
+    const response = c.json({ verified: true });
+    response.headers.set('Set-Cookie', `jwt=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${60 * 60 * 24 * 7}`);
+
+    return response;
   }
 
   return c.json({ error: 'Authentication failed' }, 400);
+});
+
+// JWT middleware to verify authentication
+const jwtMiddleware = async (c: any, next: any) => {
+  const jwt = c.req.header('Authorization')?.replace('Bearer ', '') || 
+              getCookie(c, 'jwt');
+
+  if (!jwt) {
+    return c.json({ error: 'No JWT token provided' }, 401);
+  }
+
+  try {
+    const payload = await verify(jwt, c.env.JWT_SECRET);
+    c.set('user', payload);
+    await next();
+  } catch (error) {
+    return c.json({ error: 'Invalid JWT token' }, 401);
+  }
+};
+
+// Protected route example
+app.get('/api/me', jwtMiddleware, async (c) => {
+  const user = c.get('user');
+  return c.json({ 
+    id: user.sub, 
+    username: user.username 
+  });
+});
+
+// Logout endpoint
+app.post('/api/logout', async (c) => {
+  const response = c.json({ message: 'Logged out successfully' });
+  response.headers.set('Set-Cookie', 'jwt=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0');
+  return response;
 });
 
 export default app;
