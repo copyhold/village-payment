@@ -43,7 +43,7 @@ export function Login() {
       const assertion = await startAuthentication(options);
 
       // 3. Send the assertion response back to the server to verify
-      if (!userId) {
+      if (!options.userId) {
         throw new Error('User ID not found. Please try again.');
       }
 
@@ -52,7 +52,7 @@ export function Login() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           response: assertion,
-          userId: userId
+          userId: options.userId
         }),
       });
 

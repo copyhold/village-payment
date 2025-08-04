@@ -18,7 +18,7 @@ export interface Authenticator {
   credential_id: string;
   credential_public_key: Uint8Array;
   counter: number;
-  transports?: AuthenticatorTransport[];
+  transports?: AuthenticatorTransport[] | string; // Can be array when used in app, or string when from DB
 }
 
 /**

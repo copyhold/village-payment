@@ -193,7 +193,7 @@ app.post('/api/login/start', async (c) => {
     allowCredentials: userAuthenticators.map(auth => ({
       id: auth.credential_id,
       type: 'public-key',
-      transports: auth.transports,
+      transports: auth.transports ? JSON.parse(auth.transports as string) : undefined,
     })),
     userVerification: 'required',
   });

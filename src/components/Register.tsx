@@ -43,7 +43,7 @@ export function Register() {
       const attestation = await startRegistration(options);
 
       // 3. Send the attestation response back to the server to verify and save
-      if (!userId) {
+      if (!options.userId) {
         throw new Error('User ID not found. Please try again.');
       }
 
@@ -52,7 +52,7 @@ export function Register() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           response: attestation,
-          userId: userId
+          userId: options.userId
         }),
       });
 
