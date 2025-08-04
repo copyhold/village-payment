@@ -1,6 +1,7 @@
 import { useAuth } from '../auth-context'
 import { Register } from '../components/Register'
 import { Login } from '../components/Login'
+import { UserProfile } from '../components/UserProfile'
 import { Link } from '@tanstack/react-router'
 
 export function UserPage() {
@@ -21,40 +22,25 @@ export function UserPage() {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <div className="container mx-auto p-4">
-          <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
-            <div className="text-center mb-6">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">User Profile</h1>
-              <p className="text-gray-600">Welcome, {user.username}!</p>
-            </div>
-
-            <div className="space-y-4 mb-6">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-gray-900 mb-2">Account Information</h3>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div>
-                    <span className="font-medium">Username:</span> {user.username}
-                  </div>
-                  <div>
-                    <span className="font-medium">User ID:</span> {user.id}
-                  </div>
-                </div>
+          <UserProfile />
+          
+          <div className="max-w-2xl mx-auto mt-6">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="space-y-3">
+                <button
+                  onClick={logout}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+                >
+                  Logout
+                </button>
+                
+                <Link
+                  to="/"
+                  className="block w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-center"
+                >
+                  Back to Home
+                </Link>
               </div>
-            </div>
-
-            <div className="space-y-3">
-              <button
-                onClick={logout}
-                className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
-              >
-                Logout
-              </button>
-              
-              <Link
-                to="/"
-                className="block w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-center"
-              >
-                Back to Home
-              </Link>
             </div>
           </div>
         </div>
