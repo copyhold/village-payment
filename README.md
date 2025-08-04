@@ -20,6 +20,25 @@ This application adds a control layer for children's purchases while maintaining
 4. **Parent Decision**: Parent receives web push notification with approve/decline options
 5. **Timeout Handling**: If no response within 5 minutes → **Automatic approval**
 
+## Frontend Architecture
+
+### Routing Structure
+The application uses TanStack Router for client-side routing with the following routes:
+
+- **`/`** - Home page with navigation links to different parts of the app
+- **`/user`** - User management page (login/register forms when not authorized, user profile when authorized)
+- **`/sell`** - Vendor interface for processing payments (currently placeholder)
+
+### State Management
+- **Global Authentication State**: Managed via React Context (`AuthProvider`)
+- **Route-specific State**: Handled by individual page components
+- **Real-time Updates**: Will use WebSocket connections for live transaction status
+
+### Key Components
+- **Navigation**: Consistent navigation bar across all pages
+- **Authentication**: WebAuthn-based passwordless authentication
+- **Responsive Design**: Mobile-first approach with Tailwind CSS
+
 ## Technical Architecture
 
 ### Cloudflare Platform Components
