@@ -474,6 +474,44 @@ app.post('/api/vendor/payment-request', jwtMiddleware, async (c) => {
 });
 
 /**
+ * VENDOR OPERATIONS - Get family info and cached surname
+ */
+app.post('/api/vendor/family-info', jwtMiddleware, async (c) => {
+  const vendor = c.get('user');
+  const { family_number, vendor_id } = await c.req.json();
+
+  if (!family_number) {
+    return c.json({ error: 'Family number is required' }, 400);
+  }
+
+  // Get family info
+  const family = await c.env.DB.prepare(
+    'SELECT surname, default_limit FROM users WHERE family_number = ?1'
+  ).bind(family_number).first();
+
+  if (!family) {
+    return c.json({ error: 'Family not found' }, 404);
+  }
+
+  // Get vendor-specific limit
+  const vendorLimit = await c.env.DB.prepare(
+    'SELECT limit_amount FROM vendor_limits WHERE family_number = ?1 AND vendor_id = ?2'
+  ).bind(family_number, vendor_id).first();
+
+  // Get cached surname for this vendor
+  const cached = await c.env.DB.prepare(
+    'SELECT surname FROM vendor_surname_cache WHERE vendor_id = ?1 AND family_number = ?2'
+  ).bind(vendor_id, family_number).first();
+
+  const applicableLimit = vendorLimit?.limit_amount || family.default_limit || 50.00;
+
+  return c.json({
+    surname: cached?.surname || family.surname,
+    limit: applicableLimit
+  });
+});
+
+/**
  * VENDOR OPERATIONS - Get cached surname for family number
  */
 app.get('/api/vendor/surname/:family_number', jwtMiddleware, async (c) => {
@@ -486,6 +524,39 @@ app.get('/api/vendor/surname/:family_number', jwtMiddleware, async (c) => {
 
   return c.json({
     surname: cached?.surname || null
+  });
+});
+
+/**
+ * VENDOR OPERATIONS - Get transaction history
+ */
+app.get('/api/vendor/history', jwtMiddleware, async (c) => {
+  const vendor = c.get('user');
+  const vendorId = c.req.query('vendorId');
+
+  if (vendorId !== vendor.sub) {
+    return c.json({ error: 'Unauthorized' }, 403);
+  }
+
+  // Get transactions from the last hour
+  const transactions = await c.env.DB.prepare(`
+    SELECT 
+      t.id,
+      t.created_at as time,
+      t.family_number,
+      u.surname,
+      t.amount,
+      t.status,
+      t.description
+    FROM transactions t
+    LEFT JOIN users u ON t.family_number = u.family_number
+    WHERE t.vendor_id = ?1 
+    AND t.created_at >= datetime('now', '-1 hour')
+    ORDER BY t.created_at DESC
+  `).bind(vendor.sub).all();
+
+  return c.json({
+    transactions: transactions.results || []
   });
 });
 
