@@ -18,7 +18,7 @@ import type { User, Authenticator } from './auth-types';
 
 // Define the environment bindings
 type Env = {
-  DBAUTH: D1Database;
+  DB: D1Database;
   RP_ID: string;
   RP_NAME: string;
   RP_ORIGIN: string;
@@ -57,7 +57,7 @@ app.post('/api/register/start', async (c) => {
   }
 
   // Check if user already exists
-  const existingUser: User | null = await c.env.DBAUTH.prepare(
+  const existingUser: User | null = await c.env.DB.prepare(
     'SELECT * FROM users WHERE username = ?1'
   ).bind(username).first();
 
@@ -81,7 +81,7 @@ app.post('/api/register/start', async (c) => {
   });
 
   // Temporarily store the user and challenge
-  await c.env.DBAUTH.prepare(
+  await c.env.DB.prepare(
     'INSERT INTO users (id, username, current_challenge) VALUES (?1, ?2, ?3)'
   ).bind(user.id, user.username, options.challenge).run();
 
@@ -104,7 +104,7 @@ app.post('/api/register/finish', async (c) => {
   }
 
   // Find the user by the provided user ID
-  const user: User | null = await c.env.DBAUTH.prepare(
+  const user: User | null = await c.env.DB.prepare(
     'SELECT * FROM users WHERE id = ?1'
   ).bind(userId).first();
 
@@ -145,7 +145,7 @@ app.post('/api/register/finish', async (c) => {
     };
 
     // Save the new authenticator to the database
-    await c.env.DBAUTH.prepare(
+    await c.env.DB.prepare(
       'INSERT INTO authenticators (user_id, credential_id, credential_public_key, counter, transports) VALUES (?1, ?2, ?3, ?4, ?5)'
     ).bind(
       newAuthenticator.user_id,
@@ -156,7 +156,7 @@ app.post('/api/register/finish', async (c) => {
     ).run();
 
     // Clear the challenge
-    await c.env.DBAUTH.prepare(
+    await c.env.DB.prepare(
       'UPDATE users SET current_challenge = NULL WHERE id = ?1'
     ).bind(user.id).run();
 
@@ -179,7 +179,7 @@ app.post('/api/login/start', async (c) => {
     return c.json({ error: 'Username is required' }, 400);
   }
 
-  const user: User | null = await c.env.DBAUTH.prepare(
+  const user: User | null = await c.env.DB.prepare(
     'SELECT * FROM users WHERE username = ?1'
   ).bind(username).first();
 
@@ -187,7 +187,7 @@ app.post('/api/login/start', async (c) => {
     return c.json({ error: 'User not found' }, 404);
   }
 
-    const { results: userAuthenticators } = await c.env.DBAUTH.prepare(
+    const { results: userAuthenticators } = await c.env.DB.prepare(
     'SELECT * FROM authenticators WHERE user_id = ?1'
   ).bind(user.id).all<Authenticator>();
 
@@ -202,7 +202,7 @@ app.post('/api/login/start', async (c) => {
   });
 
   // Store the challenge
-  await c.env.DBAUTH.prepare(
+  await c.env.DB.prepare(
     'UPDATE users SET current_challenge = ?1 WHERE id = ?2'
   ).bind(options.challenge, user.id).run();
 
@@ -224,7 +224,7 @@ app.post('/api/login/finish', async (c) => {
     return c.json({ error: 'User ID is required' }, 400);
   }
 
-  const user: User | null = await c.env.DBAUTH.prepare(
+  const user: User | null = await c.env.DB.prepare(
     'SELECT * FROM users WHERE id = ?1'
   ).bind(userId).first();
 
@@ -237,7 +237,7 @@ app.post('/api/login/finish', async (c) => {
   }
 
   // Find the authenticator that the user is trying to use
-  const authenticator: Authenticator | null = await c.env.DBAUTH.prepare(
+  const authenticator: Authenticator | null = await c.env.DB.prepare(
     'SELECT * FROM authenticators WHERE credential_id = ?1 AND user_id = ?2'
   ).bind(response.id, user.id).first();
 
@@ -268,12 +268,12 @@ app.post('/api/login/finish', async (c) => {
 
   if (verified) {
     // Update the authenticator counter
-    await c.env.DBAUTH.prepare(
+    await c.env.DB.prepare(
       'UPDATE authenticators SET counter = ?1 WHERE credential_id = ?2'
     ).bind(authenticationInfo.newCounter, authenticator.credential_id).run();
 
     // Clear the challenge
-    await c.env.DBAUTH.prepare(
+    await c.env.DB.prepare(
       'UPDATE users SET current_challenge = NULL WHERE id = ?1'
     ).bind(user.id).run();
 
@@ -329,6 +329,164 @@ app.post('/api/logout', async (c) => {
   const response = c.json({ message: 'Logged out successfully' });
   response.headers.set('Set-Cookie', 'jwt=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0');
   return response;
+});
+
+/**
+ * FAMILY MANAGEMENT - Update family settings
+ */
+app.put('/api/family/settings', jwtMiddleware, async (c) => {
+  const user = c.get('user');
+  const { family_number, surname } = await c.req.json();
+
+  if (!family_number || !surname) {
+    return c.json({ error: 'Family number and surname are required' }, 400);
+  }
+
+  // Check if family number is already taken by another user
+  const existingUser = await c.env.DB.prepare(
+    'SELECT id FROM users WHERE family_number = ?1 AND id != ?2'
+  ).bind(family_number, user.sub).first();
+
+  if (existingUser) {
+    return c.json({ error: 'Family number already taken by another user' }, 409);
+  }
+
+  // Update user's family settings
+  await c.env.DB.prepare(
+    'UPDATE users SET family_number = ?1, surname = ?2, updated_at = CURRENT_TIMESTAMP WHERE id = ?3'
+  ).bind(family_number, surname, user.sub).run();
+
+  return c.json({ 
+    message: 'Family settings updated successfully',
+    family_number,
+    surname
+  });
+});
+
+/**
+ * FAMILY MANAGEMENT - Get family settings
+ */
+app.get('/api/family/settings', jwtMiddleware, async (c) => {
+  const user = c.get('user');
+
+  const userData = await c.env.DB.prepare(
+    'SELECT family_number, surname, default_limit FROM users WHERE id = ?1'
+  ).bind(user.sub).first();
+
+  return c.json({
+    family_number: userData?.family_number || null,
+    surname: userData?.surname || null,
+    default_limit: userData?.default_limit || 50.00
+  });
+});
+
+/**
+ * FAMILY MANAGEMENT - Update spending limits
+ */
+app.put('/api/family/limits', jwtMiddleware, async (c) => {
+  const user = c.get('user');
+  const { default_limit } = await c.req.json();
+
+  if (typeof default_limit !== 'number' || default_limit < 0) {
+    return c.json({ error: 'Default limit must be a positive number' }, 400);
+  }
+
+  await c.env.DB.prepare(
+    'UPDATE users SET default_limit = ?1, updated_at = CURRENT_TIMESTAMP WHERE id = ?2'
+  ).bind(default_limit, user.sub).run();
+
+  return c.json({ 
+    message: 'Spending limit updated successfully',
+    default_limit
+  });
+});
+
+/**
+ * VENDOR OPERATIONS - Submit payment request
+ */
+app.post('/api/vendor/payment-request', jwtMiddleware, async (c) => {
+  const vendor = c.get('user');
+  const { family_number, surname, amount, description } = await c.req.json();
+
+  if (!family_number || !surname || !amount) {
+    return c.json({ error: 'Family number, surname, and amount are required' }, 400);
+  }
+
+  if (typeof amount !== 'number' || amount <= 0) {
+    return c.json({ error: 'Amount must be a positive number' }, 400);
+  }
+
+  // Validate family number and surname combination
+  const family = await c.env.DB.prepare(
+    'SELECT id, default_limit FROM users WHERE family_number = ?1 AND surname = ?2'
+  ).bind(family_number, surname).first();
+
+  if (!family) {
+    return c.json({ error: 'Invalid family number or surname' }, 404);
+  }
+
+  // Check vendor-specific limit first, then default limit
+  const vendorLimit = await c.env.DB.prepare(
+    'SELECT limit_amount FROM vendor_limits WHERE family_number = ?1 AND vendor_id = ?2'
+  ).bind(family_number, vendor.sub).first();
+
+  const applicableLimit = vendorLimit?.limit_amount || family.default_limit || 50.00;
+
+  // Create transaction
+  const transaction = await c.env.DB.prepare(
+    'INSERT INTO transactions (family_number, vendor_id, amount, description) VALUES (?1, ?2, ?3, ?4) RETURNING id'
+  ).bind(family_number, vendor.sub, amount, description || null).first();
+
+  const transactionId = transaction?.id;
+
+  if (!transactionId) {
+    return c.json({ error: 'Failed to create transaction' }, 500);
+  }
+
+  // Cache the surname for future autofill
+  await c.env.DB.prepare(
+    'INSERT OR REPLACE INTO vendor_surname_cache (vendor_id, family_number, surname, updated_at) VALUES (?1, ?2, ?3, CURRENT_TIMESTAMP)'
+  ).bind(vendor.sub, family_number, surname).run();
+
+  // Check if auto-approval applies
+  if (amount <= applicableLimit) {
+    // Auto-approve
+    await c.env.DB.prepare(
+      'UPDATE transactions SET status = "approved", approved_at = CURRENT_TIMESTAMP WHERE id = ?1'
+    ).bind(transactionId).run();
+
+    return c.json({
+      success: true,
+      transaction_id: transactionId,
+      message: 'Payment approved automatically',
+      requires_approval: false
+    });
+  } else {
+    // Requires approval - will be handled by notification system later
+    return c.json({
+      success: true,
+      transaction_id: transactionId,
+      message: 'Payment request submitted, awaiting approval',
+      requires_approval: true,
+      approval_timeout: 300 // 5 minutes in seconds
+    });
+  }
+});
+
+/**
+ * VENDOR OPERATIONS - Get cached surname for family number
+ */
+app.get('/api/vendor/surname/:family_number', jwtMiddleware, async (c) => {
+  const vendor = c.get('user');
+  const family_number = c.req.param('family_number');
+
+  const cached = await c.env.DB.prepare(
+    'SELECT surname FROM vendor_surname_cache WHERE vendor_id = ?1 AND family_number = ?2'
+  ).bind(vendor.sub, family_number).first();
+
+  return c.json({
+    surname: cached?.surname || null
+  });
 });
 
 export default app;

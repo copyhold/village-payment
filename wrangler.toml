@@ -17,12 +17,7 @@ JWT_SECRET = "your-super-secret-jwt-key-change-this-in-production"
 [[d1_databases]]
 binding = "DB"
 database_name = "village_payments"
-database_id = "8f90582f-f47c-41c3-afe2-9715b069405d"
-
-[[d1_databases]]
-binding = "DBAUTH"
-database_name = "auth-db"
-database_id = "db1a779b-9861-43ac-85b9-87d3c33dfadd"  # Replace with actual database ID
+database_id = "d3c3d241-54ad-4a81-bf15-6556fe27c3ac"
 
 [[env.production.queues.producers]]
 binding = "AUTO_APPROVAL_QUEUE"
