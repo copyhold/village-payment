@@ -1,4 +1,4 @@
-/// <reference types="@cloudflare/workers-types" />
+/// areference types="@cloudflare/workers-types" />
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import {
@@ -68,7 +68,7 @@ app.post('/api/register/start', async (c) => {
     rpName: c.env.RP_NAME,
     rpID: c.env.RP_ID,
     userName: user.username,
-    userID: user.id,
+    userID: new TextEncoder().encode(user.id),
     attestationType: 'none',
     excludeCredentials: [],
     authenticatorSelection: {
@@ -82,7 +82,10 @@ app.post('/api/register/start', async (c) => {
     'INSERT INTO users (id, username, current_challenge) VALUES (?1, ?2, ?3)'
   ).bind(user.id, user.username, options.challenge).run();
 
-  return c.json(options);
+  return c.json({
+    ...options,
+    userId: user.id
+  });
 });
 
 /**
@@ -91,12 +94,16 @@ app.post('/api/register/start', async (c) => {
  * Verifies the registration response and saves the new authenticator.
  */
 app.post('/api/register/finish', async (c) => {
-  const body: RegistrationResponseJSON = await c.req.json();
+  const { response, userId } = await c.req.json();
 
-  // Find the user by the ID in the registration response
+  if (!userId) {
+    return c.json({ error: 'User ID is required' }, 400);
+  }
+
+  // Find the user by the provided user ID
   const user: User | null = await c.env.DBAUTH.prepare(
     'SELECT * FROM users WHERE id = ?1'
-  ).bind(body.id).first();
+  ).bind(userId).first();
 
   if (!user) {
     return c.json({ error: 'User not found.' }, 404);
@@ -109,7 +116,7 @@ app.post('/api/register/finish', async (c) => {
   let verification;
   try {
     verification = await verifyRegistrationResponse({
-      response: body,
+      response: response,
       expectedChallenge: user.current_challenge,
       expectedOrigin: c.env.RP_ORIGIN,
       expectedRPID: c.env.RP_ID,
@@ -124,7 +131,7 @@ app.post('/api/register/finish', async (c) => {
 
   if (verified && registrationInfo) {
     const { credentialPublicKey, credentialID, counter } = registrationInfo;
-    const transports = body.response.transports || [];
+    const transports = response.response.transports || [];
 
     const newAuthenticator: Authenticator = {
       user_id: user.id,
@@ -196,7 +203,10 @@ app.post('/api/login/start', async (c) => {
     'UPDATE users SET current_challenge = ?1 WHERE id = ?2'
   ).bind(options.challenge, user.id).run();
 
-  return c.json(options);
+  return c.json({
+    ...options,
+    userId: user.id
+  });
 });
 
 /**
@@ -205,11 +215,15 @@ app.post('/api/login/start', async (c) => {
  * Verifies the authentication response.
  */
 app.post('/api/login/finish', async (c) => {
-  const body: AuthenticationResponseJSON = await c.req.json();
+  const { response, userId } = await c.req.json();
+
+  if (!userId) {
+    return c.json({ error: 'User ID is required' }, 400);
+  }
 
   const user: User | null = await c.env.DBAUTH.prepare(
     'SELECT * FROM users WHERE id = ?1'
-  ).bind(body.id).first();
+  ).bind(userId).first();
 
   if (!user) {
     return c.json({ error: 'User not found' }, 404);
@@ -222,7 +236,7 @@ app.post('/api/login/finish', async (c) => {
   // Find the authenticator that the user is trying to use
   const authenticator: Authenticator | null = await c.env.DBAUTH.prepare(
     'SELECT * FROM authenticators WHERE credential_id = ?1 AND user_id = ?2'
-  ).bind(body.id, user.id).first();
+  ).bind(response.id, user.id).first();
 
   if (!authenticator) {
     return c.json({ error: 'Authenticator not found' }, 404);
@@ -231,7 +245,7 @@ app.post('/api/login/finish', async (c) => {
   let verification;
   try {
     verification = await verifyAuthenticationResponse({
-      response: body,
+      response: response,
       expectedChallenge: user.current_challenge,
       expectedOrigin: c.env.RP_ORIGIN,
       expectedRPID: c.env.RP_ID,

@@ -5,6 +5,7 @@ import type { PublicKeyCredentialCreationOptionsJSON } from '@simplewebauthn/typ
 export function Register() {
   const [username, setUsername] = useState('');
   const [message, setMessage] = useState('');
+  const [userId, setUserId] = useState<string | null>(null);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,27 +24,48 @@ export function Register() {
         body: JSON.stringify({ username }),
       });
 
-      const options: PublicKeyCredentialCreationOptionsJSON & { error?: string } = await optionsRes.json();
+      let options: PublicKeyCredentialCreationOptionsJSON & { error?: string; userId?: string };
+      try {
+        options = await optionsRes.json();
+      } catch (err) {
+        throw new Error('Ошибка разбора ответа сервера (register/start): сервер вернул невалидный JSON или пустой ответ.');
+      }
       if (options.error) {
         throw new Error(options.error);
+      }
+
+      // Store the user ID for the finish step
+      if (options.userId) {
+        setUserId(options.userId);
       }
 
       // 2. Pass options to the browser to create a new credential
       const attestation = await startRegistration(options);
 
       // 3. Send the attestation response back to the server to verify and save
+      if (!userId) {
+        throw new Error('User ID not found. Please try again.');
+      }
+
       const verificationRes = await fetch('/api/register/finish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(attestation),
+        body: JSON.stringify({
+          response: attestation,
+          userId: userId
+        }),
       });
 
-      const verification: { verified: boolean; error?: string } = await verificationRes.json();
-
+      let verification: { verified: boolean; error?: string };
+      try {
+        verification = await verificationRes.json();
+      } catch (err) {
+        throw new Error('Ошибка разбора ответа сервера (register/finish): сервер вернул невалидный JSON или пустой ответ.');
+      }
       if (verification.verified) {
         setMessage(`Success! Registered ${username}. You can now log in.`);
       } else {
-        throw new Error('Registration failed.');
+        throw new Error(verification.error || 'Registration failed.');
       }
     } catch (error) {
       setMessage((error as Error).message);

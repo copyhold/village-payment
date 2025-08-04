@@ -1,38 +1,14 @@
 name = "village-payment-auth"
-compatibility_date = "2024-03-20"
+compatibility_date = "2025-04-03"
+main = "./src/worker.ts"
 
-# Variables for WebAuthn Relying Party
-[vars]
-RP_ID = "localhost"
-RP_NAME = "Localhost WebAuthn"
-RP_ORIGIN = "http://localhost:5173"
+compatibility_flags = ["nodejs_compat"]
+assets = { not_found_handling = "single-page-application",run_worker_first = ["/api/*"] }
 
-# D1 database binding
-[[d1_databases]]
-binding = "DBAUTH"
-database_name = "auth-db"
-database_id = ""
 
-# Local development server settings
-[dev]
-port = 8788
-
-# Compatibility flags for Cloudflare Workers
-[compatibility_flags]
-node_compat = true
-
-# This is the entry point for our API worker.
-# All requests to /api/* will be handled by this worker.
-main = "src/worker.ts"
-
-# Configuration for the Vite dev server and Cloudflare Pages.
-# This tells Pages how to handle routing for a single-page application.
-[pages]
-assets = {"not_found_handling" = "single-page-application"}
-
-[vars]
 # These are for the WebAuthn Relying Party (RP) configuration.
 # We'll use localhost for development.
+[vars]
 RP_ID = "localhost"
 RP_NAME = "Village Payment Auth"
 RP_ORIGIN = "http://localhost:5173"

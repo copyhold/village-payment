@@ -5,6 +5,7 @@ import type { PublicKeyCredentialRequestOptionsJSON } from '@simplewebauthn/type
 export function Login() {
   const [username, setUsername] = useState('');
   const [message, setMessage] = useState('');
+  const [userId, setUserId] = useState<string | null>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,27 +24,48 @@ export function Login() {
         body: JSON.stringify({ username }),
       });
 
-      const options: PublicKeyCredentialRequestOptionsJSON & { error?: string } = await optionsRes.json();
+      let options: PublicKeyCredentialRequestOptionsJSON & { error?: string; userId?: string };
+      try {
+        options = await optionsRes.json();
+      } catch (err) {
+        throw new Error('Ошибка разбора ответа сервера (login/start): сервер вернул невалидный JSON или пустой ответ.');
+      }
       if (options.error) {
         throw new Error(options.error);
+      }
+
+      // Store the user ID for the finish step
+      if (options.userId) {
+        setUserId(options.userId);
       }
 
       // 2. Pass options to the browser to sign the challenge
       const assertion = await startAuthentication(options);
 
       // 3. Send the assertion response back to the server to verify
+      if (!userId) {
+        throw new Error('User ID not found. Please try again.');
+      }
+
       const verificationRes = await fetch('/api/login/finish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(assertion),
+        body: JSON.stringify({
+          response: assertion,
+          userId: userId
+        }),
       });
 
-      const verification: { verified: boolean; error?: string } = await verificationRes.json();
-
+      let verification: { verified: boolean; error?: string };
+      try {
+        verification = await verificationRes.json();
+      } catch (err) {
+        throw new Error('Ошибка разбора ответа сервера (login/finish): сервер вернул невалидный JSON или пустой ответ.');
+      }
       if (verification.verified) {
         setMessage(`Welcome back, ${username}!`);
       } else {
-        throw new Error('Login failed.');
+        throw new Error(verification.error || 'Login failed.');
       }
     } catch (error) {
       setMessage((error as Error).message);
