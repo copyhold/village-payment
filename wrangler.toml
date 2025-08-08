@@ -31,10 +31,10 @@ max_batch_timeout = 30
 [env.production]
 [[kv_namespaces]]
 binding = "FAMILIES_KV"
-id = "your-families-namespace-id" 
+id = "1562fd7cd92346d9b2d4889d7014a773" 
 [[kv_namespaces]]
 binding = "PENDING_KV"
-id = "your-pending-namespace-id"
+id = "fcf8ddd5dd504cafaab0604235a968ed"
 [[kv_namespaces]]
 binding = "VENDORS_KV"
-id = "your-vendors-namespace-id"
+id = "61279cf83ecb41869c059068765bad0c"
