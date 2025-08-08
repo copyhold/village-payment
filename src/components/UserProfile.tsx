@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../auth-context'
+import { InviteLink } from './InviteLink'
 
 interface FamilySettings {
   family_number: string | null
@@ -17,6 +18,7 @@ export function UserProfile() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [showInviteModal, setShowInviteModal] = useState(false)
 
   const [formData, setFormData] = useState({
     family_number: '',
@@ -240,7 +242,7 @@ export function UserProfile() {
 
           <div className="border-t pt-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Current Settings</h3>
-            <div className="bg-blue-50 p-4 rounded-lg">
+            <div className="bg-blue-50 p-4 rounded-lg mb-4">
               <div className="space-y-2 text-sm">
                 <div>
                   <span className="font-medium text-blue-900">Family Number:</span>
@@ -262,9 +264,29 @@ export function UserProfile() {
                 </div>
               </div>
             </div>
+
+            {settings.family_number && settings.surname && (
+              <div className="bg-green-50 p-4 rounded-lg">
+                <h4 className="font-medium text-green-900 mb-2">Invite Family Members</h4>
+                <p className="text-sm text-green-700 mb-3">
+                  Create an invite link to allow other devices to join your family. 
+                  They'll be able to receive notifications and approve payments.
+                </p>
+                <button
+                  onClick={() => setShowInviteModal(true)}
+                  className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+                >
+                  Create Invite Link
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {showInviteModal && (
+        <InviteLink onClose={() => setShowInviteModal(false)} />
+      )}
     </div>
   )
 } 

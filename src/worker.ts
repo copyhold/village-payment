@@ -297,6 +297,8 @@ app.post('/api/login/finish', async (c) => {
   return c.json({ error: 'Authentication failed' }, 400);
 });
 
+
+
 // JWT middleware to verify authentication
 const jwtMiddleware = async (c: any, next: any) => {
   const jwt = c.req.header('Authorization')?.replace('Bearer ', '') || 
@@ -558,6 +560,225 @@ app.get('/api/vendor/history', jwtMiddleware, async (c) => {
   return c.json({
     transactions: transactions.results || []
   });
+});
+
+/**
+ * INVITE - CREATE
+ * 
+ * Creates an invite link for the current user's family
+ */
+app.post('/api/invite/create', jwtMiddleware, async (c) => {
+  const user = c.get('user');
+  
+  // Fetch user's family settings from database
+  const userData = await c.env.DB.prepare(
+    'SELECT family_number, surname FROM users WHERE id = ?1'
+  ).bind(user.sub).first();
+
+  if (!userData?.family_number || !userData?.surname) {
+    return c.json({ error: 'Family settings must be configured before creating invites' }, 400);
+  }
+
+  const token = crypto.randomUUID();
+  const expiresAt = Math.floor(Date.now() / 1000) + (24 * 60 * 60); // 24 hours from now
+
+  try {
+    await c.env.DB.prepare(
+      'INSERT INTO one_time_links (user_id, token, expires_at, used) VALUES (?1, ?2, ?3, ?4)'
+    ).bind(user.sub, token, expiresAt, false).run();
+
+    const inviteUrl = `${c.env.RP_ORIGIN}/invite?token=${token}`;
+    
+    return c.json({
+      success: true,
+      inviteUrl,
+      token,
+      expiresAt
+    });
+  } catch (error) {
+    return c.json({ error: 'Failed to create invite link' }, 500);
+  }
+});
+
+/**
+ * INVITE - VALIDATE
+ * 
+ * Validates an invite token and returns family information
+ */
+app.get('/api/invite/validate/:token', async (c) => {
+  const token = c.req.param('token');
+  
+  if (!token) {
+    return c.json({ error: 'Token is required' }, 400);
+  }
+
+  try {
+    const link = await c.env.DB.prepare(`
+      SELECT otl.*, u.family_number, u.surname 
+      FROM one_time_links otl
+      JOIN users u ON otl.user_id = u.id
+      WHERE otl.token = ?1 AND otl.used = 0 AND otl.expires_at > ?2
+    `).bind(token, Math.floor(Date.now() / 1000)).first();
+
+    if (!link) {
+      return c.json({ error: 'Invalid or expired invite link' }, 400);
+    }
+
+    return c.json({
+      valid: true,
+      family_number: link.family_number,
+      surname: link.surname,
+      expiresAt: link.expires_at
+    });
+  } catch (error) {
+    return c.json({ error: 'Failed to validate invite link' }, 500);
+  }
+});
+
+/**
+ * INVITE - START REGISTRATION
+ * 
+ * Starts the registration process for accepting an invite
+ */
+app.post('/api/invite/start', async (c) => {
+  const { token, username } = await c.req.json();
+
+  if (!token || !username) {
+    return c.json({ error: 'Token and username are required' }, 400);
+  }
+
+  try {
+    const link = await c.env.DB.prepare(`
+      SELECT otl.*, u.family_number, u.surname 
+      FROM one_time_links otl
+      JOIN users u ON otl.user_id = u.id
+      WHERE otl.token = ?1 AND otl.used = 0 AND otl.expires_at > ?2
+    `).bind(token, Math.floor(Date.now() / 1000)).first();
+
+    if (!link) {
+      return c.json({ error: 'Invalid or expired invite link' }, 400);
+    }
+
+    const existingUser = await c.env.DB.prepare(
+      'SELECT * FROM users WHERE username = ?1'
+    ).bind(username).first();
+
+    if (existingUser) {
+      return c.json({ error: 'Username already taken' }, 409);
+    }
+
+    const newUser: User = { id: crypto.randomUUID(), username };
+
+    const options = await generateRegistrationOptions({
+      rpName: c.env.RP_NAME,
+      rpID: c.env.RP_ID,
+      userName: newUser.username,
+      userID: new TextEncoder().encode(newUser.id),
+      attestationType: 'none',
+      excludeCredentials: [],
+      authenticatorSelection: {
+        residentKey: 'required',
+        userVerification: 'required',
+      },
+    });
+
+    // Create user without family_number and surname initially
+    // These will be set after successful WebAuthn registration
+    await c.env.DB.prepare(
+      'INSERT INTO users (id, username, current_challenge, default_limit) VALUES (?1, ?2, ?3, ?4)'
+    ).bind(newUser.id, newUser.username, options.challenge, 50.00).run();
+
+    return c.json({
+      ...options,
+      userId: newUser.id,
+      family_number: link.family_number,
+      surname: link.surname
+    });
+  } catch (error) {
+    return c.json({ error: 'Failed to start invite registration' }, 500);
+  }
+});
+
+/**
+ * INVITE - FINISH REGISTRATION
+ * 
+ * Completes the registration process for accepting an invite
+ */
+app.post('/api/invite/finish', async (c) => {
+  const { token, response } = await c.req.json();
+
+  if (!token || !response) {
+    return c.json({ error: 'Token and response are required' }, 400);
+  }
+
+  try {
+    const link = await c.env.DB.prepare(`
+      SELECT otl.*, u.family_number, u.surname 
+      FROM one_time_links otl
+      JOIN users u ON otl.user_id = u.id
+      WHERE otl.token = ?1 AND otl.used = 0 AND otl.expires_at > ?2
+    `).bind(token, Math.floor(Date.now() / 1000)).first();
+
+    if (!link) {
+      return c.json({ error: 'Invalid or expired invite link' }, 400);
+    }
+
+    const user = await c.env.DB.prepare(
+      'SELECT * FROM users WHERE id = ?1'
+    ).bind(response.userId).first();
+
+    if (!user) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+
+    const verification = await verifyRegistrationResponse({
+      response: response as RegistrationResponseJSON,
+      expectedChallenge: user.current_challenge || '',
+      expectedOrigin: c.env.RP_ORIGIN,
+      expectedRPID: c.env.RP_ID,
+    });
+
+    if (!verification.verified) {
+      return c.json({ error: 'Registration verification failed' }, 400);
+    }
+
+    const { registrationInfo } = verification;
+
+    await c.env.DB.prepare(`
+      INSERT INTO authenticators (user_id, credential_id, credential_public_key, counter, transports)
+      VALUES (?1, ?2, ?3, ?4, ?5)
+    `).bind(
+      user.id,
+      registrationInfo.credentialID,
+      registrationInfo.credentialPublicKey,
+      registrationInfo.counter,
+      JSON.stringify(registrationInfo.transports || [])
+    ).run();
+
+    // Update user to join the family after successful WebAuthn registration
+    await c.env.DB.prepare(
+      'UPDATE users SET current_challenge = NULL, family_number = ?1, surname = ?2 WHERE id = ?3'
+    ).bind(link.family_number, link.surname, user.id).run();
+
+    await c.env.DB.prepare(
+      'UPDATE one_time_links SET used = 1 WHERE token = ?1'
+    ).bind(token).run();
+
+    const jwt = await sign({ userId: user.id }, c.env.JWT_SECRET);
+    
+    return c.json({
+      success: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        family_number: link.family_number,
+        surname: link.surname
+      },
+      token: jwt
+    });
+  } catch (error) {
+    return c.json({ error: 'Failed to complete invite registration' }, 500);
+  }
 });
 
 export default app;

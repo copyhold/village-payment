@@ -3,6 +3,7 @@ import App from './App'
 import { HomePage } from './pages/HomePage'
 import { UserPage } from './pages/UserPage'
 import { SellPage } from './pages/SellPage'
+import { InvitePage } from './pages/InvitePage'
 
 const rootRoute = createRootRoute({
   component: App,
@@ -26,7 +27,13 @@ const sellRoute = createRoute({
   component: SellPage,
 })
 
-const routeTree = rootRoute.addChildren([indexRoute, userRoute, sellRoute])
+const inviteRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/invite',
+  component: InvitePage,
+})
+
+const routeTree = rootRoute.addChildren([indexRoute, userRoute, sellRoute, inviteRoute])
 
 export const router = createRouter({ routeTree })
 
