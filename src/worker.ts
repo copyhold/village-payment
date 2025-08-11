@@ -688,6 +688,12 @@ app.post('/api/invite/start', async (c) => {
       'INSERT INTO users (id, username, current_challenge, default_limit) VALUES (?1, ?2, ?3, ?4)'
     ).bind(newUser.id, newUser.username, options.challenge, 50.00).run();
 
+    // Store the new user's ID in the one_time_links table for the finish process
+    // We'll use a separate field to avoid overwriting the original inviter's user_id
+    await c.env.DB.prepare(
+      'UPDATE one_time_links SET new_user_id = ?1 WHERE token = ?2'
+    ).bind(newUser.id, token).run();
+
     return c.json({
       ...options,
       userId: newUser.id,
@@ -725,7 +731,7 @@ app.post('/api/invite/finish', async (c) => {
 
     const user = await c.env.DB.prepare(
       'SELECT * FROM users WHERE id = ?1'
-    ).bind(response.userId).first();
+    ).bind(link.new_user_id).first();
 
     if (!user) {
       return c.json({ error: 'User not found' }, 404);
@@ -743,6 +749,14 @@ app.post('/api/invite/finish', async (c) => {
     }
 
     const { registrationInfo } = verification;
+
+    if (!registrationInfo) {
+      return c.json({ error: 'No registration info received' }, 400);
+    }
+
+    if (!registrationInfo.credentialID || !registrationInfo.credentialPublicKey || typeof registrationInfo.counter !== 'number') {
+      return c.json({ error: 'Invalid registration info' }, 400);
+    }
 
     await c.env.DB.prepare(`
       INSERT INTO authenticators (user_id, credential_id, credential_public_key, counter, transports)
@@ -764,7 +778,12 @@ app.post('/api/invite/finish', async (c) => {
       'UPDATE one_time_links SET used = 1 WHERE token = ?1'
     ).bind(token).run();
 
-    const jwt = await sign({ userId: user.id }, c.env.JWT_SECRET);
+    const jwt = await sign({
+      sub: user.id,
+      username: user.username,
+      exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 7), // 7 days
+      iat: Math.floor(Date.now() / 1000),
+    }, c.env.JWT_SECRET);
     
     return c.json({
       success: true,
@@ -777,7 +796,8 @@ app.post('/api/invite/finish', async (c) => {
       token: jwt
     });
   } catch (error) {
-    return c.json({ error: 'Failed to complete invite registration' }, 500);
+    console.error('Invite finish error:', error);
+    return c.json({ error: 'Failed to complete invite registration', details: error instanceof Error ? error.message : 'Unknown error' }, 500);
   }
 });
 
