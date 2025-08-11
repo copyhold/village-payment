@@ -8,6 +8,7 @@ export interface Env {
   VAPID_PRIVATE_KEY: string;
   VAPID_SUBJECT: string;
   DB: D1Database;
+  DBJOURNAL: D1Database;
 }
 
 // Используем типы из @cloudflare/workers-types для D1 (D1Database/D1PreparedStatement),
@@ -19,6 +20,71 @@ export interface PushSubscription {
     p256dh: string;
     auth: string;
   };
+}
+
+export interface PushSubscriptionRecord {
+  id: number;
+  user_id: string;
+  endpoint: string;
+  p256dh_key: string;
+  auth_key: string;
+  created_at: string;
+  last_used: string;
+  is_active: boolean;
+  user_agent?: string;
+  device_name?: string;
+}
+
+export interface NotificationTemplate {
+  id: number;
+  template_key: string;
+  title_template: string;
+  body_template: string;
+  icon_url?: string;
+  badge_url?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PushNotificationSettings {
+  id: number;
+  user_id: string;
+  setting_key: string;
+  setting_value: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationLogRecord {
+  id: number;
+  transaction_id: number;
+  sent_at: string;
+  responded_at?: string;
+  response_action?: 'approve' | 'decline' | 'timeout';
+  subscription_id?: number;
+  delivered_at?: string;
+  failed_at?: string;
+  error_message?: string;
+  retry_count: number;
+  subscription_endpoint?: string;
+}
+
+export interface TransactionRecord {
+  id: number;
+  family_number: string;
+  vendor_id: string;
+  amount: number;
+  description?: string;
+  created_at: string;
+  approved_at?: string;
+  declined_at?: string;
+  timeout_occurred: boolean;
+  status: 'pending' | 'approved' | 'declined' | 'timeout';
+  approval_requested_at?: string;
+  approval_timeout_at?: string;
+  approved_by_user_id?: string;
+  declined_by_user_id?: string;
+  decline_reason?: string;
 }
 
 export interface VendorSettings {
@@ -73,4 +139,18 @@ export enum TransactionStatus {
   DECLINED = 'declined',
   PENDING = 'pending',
   AUTO_APPROVED = 'auto_approved'
+}
+
+export interface NotificationPayload {
+  title: string;
+  body: string;
+  icon?: string;
+  badge?: string;
+  data?: any;
+  actions?: Array<{
+    action: string;
+    title: string;
+  }>;
+  requireInteraction?: boolean;
+  tag?: string;
 }

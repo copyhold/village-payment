@@ -5,6 +5,7 @@ import { registerAuthRoutes } from './routes/auth';
 import { registerFamilyRoutes } from './routes/family';
 import { registerVendorRoutes } from './routes/vendor';
 import { registerInviteRoutes } from './routes/invite';
+import { registerPushRoutes } from './routes/push';
 
 // Define the environment bindings via imported type
 
@@ -31,5 +32,6 @@ registerAuthRoutes(app);
 registerFamilyRoutes(app);
 registerVendorRoutes(app);
 registerInviteRoutes(app);
+registerPushRoutes(app);
 
 export default app;
