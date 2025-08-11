@@ -310,7 +310,7 @@ const jwtMiddleware = async (c: any, next: any) => {
 
   try {
     const payload = await verify(jwt, c.env.JWT_SECRET);
-    c.set('user', payload);
+    c.set('jwtPayload', payload);
     await next();
   } catch (error) {
     return c.json({ error: 'Invalid JWT token' }, 401);
@@ -319,7 +319,7 @@ const jwtMiddleware = async (c: any, next: any) => {
 
 // Protected route example
 app.get('/api/me', jwtMiddleware, async (c) => {
-  const user = c.get('user');
+  const user = c.get('jwtPayload');
   return c.json({ 
     id: user.sub, 
     username: user.username 
@@ -337,7 +337,7 @@ app.post('/api/logout', async (c) => {
  * FAMILY MANAGEMENT - Update family settings
  */
 app.put('/api/family/settings', jwtMiddleware, async (c) => {
-  const user = c.get('user');
+  const user = c.get('jwtPayload');
   const { family_number, surname } = await c.req.json();
 
   if (!family_number || !surname) {
@@ -369,7 +369,7 @@ app.put('/api/family/settings', jwtMiddleware, async (c) => {
  * FAMILY MANAGEMENT - Get family settings
  */
 app.get('/api/family/settings', jwtMiddleware, async (c) => {
-  const user = c.get('user');
+  const user = c.get('jwtPayload');
 
   const userData = await c.env.DB.prepare(
     'SELECT family_number, surname, default_limit FROM users WHERE id = ?1'
@@ -386,7 +386,7 @@ app.get('/api/family/settings', jwtMiddleware, async (c) => {
  * FAMILY MANAGEMENT - Update spending limits
  */
 app.put('/api/family/limits', jwtMiddleware, async (c) => {
-  const user = c.get('user');
+  const user = c.get('jwtPayload');
   const { default_limit } = await c.req.json();
 
   if (typeof default_limit !== 'number' || default_limit < 0) {
@@ -407,7 +407,7 @@ app.put('/api/family/limits', jwtMiddleware, async (c) => {
  * VENDOR OPERATIONS - Submit payment request
  */
 app.post('/api/vendor/payment-request', jwtMiddleware, async (c) => {
-  const vendor = c.get('user');
+  const vendor = c.get('jwtPayload');
   const { family_number, surname, amount, description } = await c.req.json();
 
   if (!family_number || !surname || !amount) {
@@ -479,7 +479,7 @@ app.post('/api/vendor/payment-request', jwtMiddleware, async (c) => {
  * VENDOR OPERATIONS - Get family info and cached surname
  */
 app.post('/api/vendor/family-info', jwtMiddleware, async (c) => {
-  const vendor = c.get('user');
+  const vendor = c.get('jwtPayload');
   const { family_number, vendor_id } = await c.req.json();
 
   if (!family_number) {
@@ -517,7 +517,7 @@ app.post('/api/vendor/family-info', jwtMiddleware, async (c) => {
  * VENDOR OPERATIONS - Get cached surname for family number
  */
 app.get('/api/vendor/surname/:family_number', jwtMiddleware, async (c) => {
-  const vendor = c.get('user');
+  const vendor = c.get('jwtPayload');
   const family_number = c.req.param('family_number');
 
   const cached = await c.env.DB.prepare(
@@ -533,7 +533,7 @@ app.get('/api/vendor/surname/:family_number', jwtMiddleware, async (c) => {
  * VENDOR OPERATIONS - Get transaction history
  */
 app.get('/api/vendor/history', jwtMiddleware, async (c) => {
-  const vendor = c.get('user');
+  const vendor = c.get('jwtPayload');
   const vendorId = c.req.query('vendorId');
 
   if (vendorId !== vendor.sub) {
@@ -568,7 +568,7 @@ app.get('/api/vendor/history', jwtMiddleware, async (c) => {
  * Creates an invite link for the current user's family
  */
 app.post('/api/invite/create', jwtMiddleware, async (c) => {
-  const user = c.get('user');
+  const user = c.get('jwtPayload');
   
   // Fetch user's family settings from database
   const userData = await c.env.DB.prepare(
