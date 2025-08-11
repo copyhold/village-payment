@@ -1,3 +1,4 @@
+import {Queue, KVNamespace, D1Database} from '@cloudflare/workers-types';
 export interface Env {
   FAMILIES_KV: KVNamespace;
   PENDING_KV: KVNamespace;
@@ -9,15 +10,8 @@ export interface Env {
   DB: D1Database;
 }
 
-export interface D1Database {
-  prepare(sql: string): D1PreparedStatement;
-}
-
-export interface D1PreparedStatement {
-  bind(...params: any[]): D1PreparedStatement;
-  first<T = any>(): Promise<T | null>;
-  run<T = any>(): Promise<T>;
-}
+// Используем типы из @cloudflare/workers-types для D1 (D1Database/D1PreparedStatement),
+// чтобы были доступны методы вроде .all<T>() и корректные результаты.
 
 export interface PushSubscription {
   endpoint: string;

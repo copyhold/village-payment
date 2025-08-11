@@ -1,4 +1,3 @@
-/// areference types="@cloudflare/workers-types" />
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { sign, verify } from 'hono/jwt';
@@ -11,14 +10,13 @@ import {
 } from '@simplewebauthn/server';
 import type {
   RegistrationResponseJSON,
-  AuthenticationResponseJSON,
 } from '@simplewebauthn/types';
 
 import type { User, Authenticator } from './auth-types';
 
 // Define the environment bindings
 type Env = {
-  DB: D1Database;
+  DB: import('@cloudflare/workers-types').D1Database;
   RP_ID: string;
   RP_NAME: string;
   RP_ORIGIN: string;
@@ -193,7 +191,7 @@ app.post('/api/login/start', async (c) => {
 
   const options = await generateAuthenticationOptions({
     rpID: c.env.RP_ID,
-    allowCredentials: userAuthenticators.map(auth => ({
+    allowCredentials: userAuthenticators.map((auth: Authenticator) => ({
       id: auth.credential_id,
       type: 'public-key',
       transports: auth.transports ? JSON.parse(auth.transports as string) : undefined,
@@ -421,7 +419,7 @@ app.post('/api/vendor/payment-request', jwtMiddleware, async (c) => {
   // Validate family number and surname combination
   const family = await c.env.DB.prepare(
     'SELECT id, default_limit FROM users WHERE family_number = ?1 AND surname = ?2'
-  ).bind(family_number, surname).first();
+  ).bind(family_number, surname).first<{ id: number; default_limit: number | null }>();
 
   if (!family) {
     return c.json({ error: 'Invalid family number or surname' }, 404);
@@ -430,9 +428,9 @@ app.post('/api/vendor/payment-request', jwtMiddleware, async (c) => {
   // Check vendor-specific limit first, then default limit
   const vendorLimit = await c.env.DB.prepare(
     'SELECT limit_amount FROM vendor_limits WHERE family_number = ?1 AND vendor_id = ?2'
-  ).bind(family_number, vendor.sub).first();
+  ).bind(family_number, vendor.sub).first<{ limit_amount: number | null }>();
 
-  const applicableLimit = vendorLimit?.limit_amount || family.default_limit || 50.00;
+  const applicableLimit = Number(vendorLimit?.limit_amount ?? family.default_limit ?? 50.0);
 
   // Create transaction
   const transaction = await c.env.DB.prepare(
@@ -489,7 +487,7 @@ app.post('/api/vendor/family-info', jwtMiddleware, async (c) => {
   // Get family info
   const family = await c.env.DB.prepare(
     'SELECT surname, default_limit FROM users WHERE family_number = ?1'
-  ).bind(family_number).first();
+  ).bind(family_number).first<{ surname: string; default_limit: number | null }>();
 
   if (!family) {
     return c.json({ error: 'Family not found' }, 404);
@@ -498,14 +496,14 @@ app.post('/api/vendor/family-info', jwtMiddleware, async (c) => {
   // Get vendor-specific limit
   const vendorLimit = await c.env.DB.prepare(
     'SELECT limit_amount FROM vendor_limits WHERE family_number = ?1 AND vendor_id = ?2'
-  ).bind(family_number, vendor_id).first();
+  ).bind(family_number, vendor_id).first<{ limit_amount: number | null }>();
 
   // Get cached surname for this vendor
   const cached = await c.env.DB.prepare(
     'SELECT surname FROM vendor_surname_cache WHERE vendor_id = ?1 AND family_number = ?2'
   ).bind(vendor_id, family_number).first();
 
-  const applicableLimit = vendorLimit?.limit_amount || family.default_limit || 50.00;
+  const applicableLimit = Number(vendorLimit?.limit_amount ?? family.default_limit ?? 50.0);
 
   return c.json({
     surname: cached?.surname || family.surname,
@@ -766,7 +764,7 @@ app.post('/api/invite/finish', async (c) => {
       registrationInfo.credentialID,
       registrationInfo.credentialPublicKey,
       registrationInfo.counter,
-      JSON.stringify(registrationInfo.transports || [])
+      JSON.stringify((response as RegistrationResponseJSON).response?.transports || [])
     ).run();
 
     // Update user to join the family after successful WebAuthn registration
