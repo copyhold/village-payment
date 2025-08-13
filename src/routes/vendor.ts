@@ -1,8 +1,11 @@
 import { Hono } from 'hono';
 import type { Env } from '../env';
 import { jwtMiddleware } from '../middleware/jwt';
+import { PushService } from '../services/push-service';
 
 export function registerVendorRoutes(app: Hono<{ Bindings: Env }>) {
+  const pushService = new PushService(c.env);
+
   // VENDOR OPERATIONS - Submit payment request
   app.post('/api/vendor/payment-request', jwtMiddleware, async (c) => {
     const vendor = c.get('jwtPayload');
@@ -15,6 +18,10 @@ export function registerVendorRoutes(app: Hono<{ Bindings: Env }>) {
     if (typeof amount !== 'number' || amount <= 0) {
       return c.json({ error: 'Amount must be a positive number' }, 400);
     }
+
+    const vendorInfo = await c.env.DB.prepare(
+      'SELECT username FROM users WHERE id = ?1'
+    ).bind(vendor.sub).first<{ username: string }>();
 
     const family = await c.env.DB.prepare(
       'SELECT id, default_limit FROM users WHERE family_number = ?1 AND surname = ?2'
@@ -56,12 +63,28 @@ export function registerVendorRoutes(app: Hono<{ Bindings: Env }>) {
         requires_approval: false,
       });
     } else {
+      let notificationSent = false;
+      try {
+        notificationSent = await pushService.sendTransactionApproval(
+          transactionId,
+          family_number,
+          vendorInfo?.username || 'Unknown Vendor',
+          amount,
+          description
+        );
+      } catch (error) {
+        console.error('Failed to send push notification:', error);
+      }
+
       return c.json({
         success: true,
         transaction_id: transactionId,
-        message: 'Payment request submitted, awaiting approval',
+        message: notificationSent 
+          ? 'Payment request submitted, awaiting approval' 
+          : 'Payment request submitted, awaiting approval (no active notifications)',
         requires_approval: true,
         approval_timeout: 300,
+        notification_sent: notificationSent,
       });
     }
   });

@@ -1,0 +1,7 @@
+---
+description: rules related to cloudflare
+globs:
+alwaysApply: false
+---
+
+use the cloudflare docs mcp tool to retrieve the up to date documentation if the user request relates somehow to cloudflare.
