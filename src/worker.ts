@@ -11,6 +11,39 @@ import { registerPushRoutes } from './routes/push';
 
 const app = new Hono<{ Bindings: Env }>();
 
+// Helper function to get the origin from request headers
+export function getOrigin(c: any): string {
+  const origin = c.req.header('Origin');
+  const host = c.req.header('Host');
+  
+  if (origin) {
+    return origin;
+  }
+  
+  if (host) {
+    return `https://${host}`;
+  }
+  
+  return 'https://localhost:5173';
+}
+
+// Helper function to get the RP ID from request headers
+export function getRPID(c: any): string {
+  const origin = c.req.header('Origin');
+  const host = c.req.header('Host');
+  
+  if (origin) {
+    const url = new URL(origin);
+    return url.hostname;
+  }
+  
+  if (host) {
+    return host.split(':')[0];
+  }
+  
+  return 'localhost';
+}
+
 // Роут для favicon.ico — отдаёт красную PNG 16x16
 app.get('/favicon.ico', (c) => {
   // 16x16 PNG, полностью красный

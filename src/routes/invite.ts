@@ -9,6 +9,7 @@ import type { RegistrationResponseJSON } from '@simplewebauthn/types';
 import type { Env } from '../env';
 import type { User } from '../auth-types';
 import { jwtMiddleware } from '../middleware/jwt';
+import { getOrigin, getRPID } from '../worker';
 
 export function registerInviteRoutes(app: Hono<{ Bindings: Env }>) {
   // INVITE - CREATE
@@ -31,7 +32,7 @@ export function registerInviteRoutes(app: Hono<{ Bindings: Env }>) {
         'INSERT INTO one_time_links (user_id, token, expires_at, used) VALUES (?1, ?2, ?3, ?4)'
       ).bind(user.sub, token, expiresAt, false).run();
 
-      const inviteUrl = `${c.env.RP_ORIGIN}/invite?token=${token}`;
+      const inviteUrl = `${getOrigin(c)}/invite?token=${token}`;
       return c.json({ success: true, inviteUrl, token, expiresAt });
     } catch (_err) {
       return c.json({ error: 'Failed to create invite link' }, 500);
@@ -91,7 +92,7 @@ export function registerInviteRoutes(app: Hono<{ Bindings: Env }>) {
 
       const options = await generateRegistrationOptions({
         rpName: c.env.RP_NAME,
-        rpID: c.env.RP_ID,
+        rpID: getRPID(c),
         userName: newUser.username,
         userID: new TextEncoder().encode(newUser.id),
         attestationType: 'none',
@@ -142,8 +143,8 @@ export function registerInviteRoutes(app: Hono<{ Bindings: Env }>) {
       const verification = await verifyRegistrationResponse({
         response: response as RegistrationResponseJSON,
         expectedChallenge: (user as any).current_challenge || '',
-        expectedOrigin: c.env.RP_ORIGIN,
-        expectedRPID: c.env.RP_ID,
+        expectedOrigin: getOrigin(c),
+        expectedRPID: getRPID(c),
       });
 
       if (!verification.verified) {

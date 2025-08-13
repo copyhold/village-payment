@@ -1,9 +1,9 @@
 export type Env = {
   DB: import('@cloudflare/workers-types').D1Database;
   DBJOURNAL: import('@cloudflare/workers-types').D1Database;
-  RP_ID: string;
+  RP_ID?: string;
   RP_NAME: string;
-  RP_ORIGIN: string;
+  RP_ORIGIN?: string;
   JWT_SECRET: string;
   VAPID_PUBLIC_KEY: string;
   VAPID_PRIVATE_KEY: string;

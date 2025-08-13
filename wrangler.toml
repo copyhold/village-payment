@@ -7,11 +7,9 @@ assets = { directory = "./dist/client", not_found_handling = "single-page-applic
 
 
 # These are for the WebAuthn Relying Party (RP) configuration.
-# We'll use localhost for development.
+# Development environment configuration
 [vars]
-RP_ID = "localhost"
 RP_NAME = "Village Payment Auth"
-RP_ORIGIN = "https://localhost:5173"
 VAPID_PUBLIC_KEY = "BJ1zmk8flcOTHoUBMnLw-OiKQ4Ykj0e67ThbzkGvoP8gYAZ7xcfX4dy_ZKXU3NQcfdCQd4Pux7QccUpcc3XHZb0"
 VAPID_SUBJECT = "mailto:admin@village-payment.com"
 
@@ -35,6 +33,12 @@ max_batch_size = 10
 max_batch_timeout = 30
 
 [env.production]
+# Production environment configuration
+[vars]
+RP_NAME = "Village Payment Auth"
+VAPID_PUBLIC_KEY = "BJ1zmk8flcOTHoUBMnLw-OiKQ4Ykj0e67ThbzkGvoP8gYAZ7xcfX4dy_ZKXU3NQcfdCQd4Pux7QccUpcc3XHZb0"
+VAPID_SUBJECT = "mailto:admin@village-payment.com"
+
 [[kv_namespaces]]
 binding = "FAMILIES_KV"
 id = "1562fd7cd92346d9b2d4889d7014a773" 

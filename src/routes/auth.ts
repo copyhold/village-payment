@@ -10,6 +10,7 @@ import {
 import type { Env } from '../env';
 import type { User, Authenticator } from '../auth-types';
 import { jwtMiddleware } from '../middleware/jwt';
+import { getOrigin, getRPID } from '../worker';
 
 export function registerAuthRoutes(app: Hono<{ Bindings: Env }>) {
   // REGISTRATION - START
@@ -32,7 +33,7 @@ export function registerAuthRoutes(app: Hono<{ Bindings: Env }>) {
 
     const options = await generateRegistrationOptions({
       rpName: c.env.RP_NAME,
-      rpID: c.env.RP_ID,
+      rpID: getRPID(c),
       userName: user.username,
       userID: new TextEncoder().encode(user.id),
       attestationType: 'none',
@@ -75,8 +76,8 @@ export function registerAuthRoutes(app: Hono<{ Bindings: Env }>) {
       verification = await verifyRegistrationResponse({
         response: response,
         expectedChallenge: user.current_challenge,
-        expectedOrigin: c.env.RP_ORIGIN,
-        expectedRPID: c.env.RP_ID,
+        expectedOrigin: getOrigin(c),
+        expectedRPID: getRPID(c),
         requireUserVerification: true,
       });
     } catch (error) {
@@ -139,7 +140,7 @@ export function registerAuthRoutes(app: Hono<{ Bindings: Env }>) {
     ).bind(user.id).all<Authenticator>();
 
     const options = await generateAuthenticationOptions({
-      rpID: c.env.RP_ID,
+      rpID: getRPID(c),
       allowCredentials: userAuthenticators.map((auth: any) => ({
         id: auth.credential_id,
         type: 'public-key',
@@ -188,8 +189,8 @@ export function registerAuthRoutes(app: Hono<{ Bindings: Env }>) {
       verification = await verifyAuthenticationResponse({
         response: response,
         expectedChallenge: user.current_challenge,
-        expectedOrigin: c.env.RP_ORIGIN,
-        expectedRPID: c.env.RP_ID,
+        expectedOrigin: getOrigin(c),
+        expectedRPID: getRPID(c),
         authenticator: {
           ...authenticator,
           credentialID: (authenticator as any).credential_id,
