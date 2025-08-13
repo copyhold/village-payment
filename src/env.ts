@@ -12,4 +12,5 @@ export type Env = {
   PENDING_KV: import('@cloudflare/workers-types').KVNamespace;
   VENDORS_KV: import('@cloudflare/workers-types').KVNamespace;
   AUTO_APPROVAL_QUEUE: import('@cloudflare/workers-types').Queue;
+  PUSH_SERVICE: import('@cloudflare/workers-types').Fetcher;
 };

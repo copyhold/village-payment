@@ -1,10 +1,8 @@
 import { Hono } from 'hono';
 import type { Env } from '../env';
 import { jwtMiddleware } from '../middleware/jwt';
-import { PushService } from '../services/push-service';
 
 export function registerVendorRoutes(app: Hono<{ Bindings: Env }>) {
-  const pushService = new PushService(c.env);
 
   // VENDOR OPERATIONS - Submit payment request
   app.post('/api/vendor/payment-request', jwtMiddleware, async (c) => {
@@ -65,7 +63,7 @@ export function registerVendorRoutes(app: Hono<{ Bindings: Env }>) {
     } else {
       let notificationSent = false;
       try {
-        notificationSent = await pushService.sendTransactionApproval(
+        notificationSent = await c.env.PUSH_SERVICE.sendTransactionApproval(
           transactionId,
           family_number,
           vendorInfo?.username || 'Unknown Vendor',

@@ -1,12 +1,9 @@
 import { Hono } from 'hono';
 import { Env } from '../env';
-import { PushService } from '../services/push-service';
 import { PushSubscription } from '../types';
 import { jwtMiddleware } from '../middleware/jwt';
 
 export function registerPushRoutes(app: Hono<{ Bindings: Env }>) {
-  const pushService = new PushService(app.env);
-
   app.post('/api/push/subscribe', jwtMiddleware, async (c) => {
     try {
       const { subscription, userAgent, deviceName } = await c.req.json();
@@ -15,7 +12,7 @@ export function registerPushRoutes(app: Hono<{ Bindings: Env }>) {
         return c.json({ error: 'Invalid subscription data' }, 400);
       }
 
-      const isValid = await pushService.validateSubscription(subscription);
+      const isValid = await c.env.PUSH_SERVICE.validateSubscription(subscription);
       if (!isValid) {
         return c.json({ error: 'Invalid subscription' }, 400);
       }
@@ -26,7 +23,7 @@ export function registerPushRoutes(app: Hono<{ Bindings: Env }>) {
         return c.json({ error: 'User not authenticated' }, 401);
       }
 
-      const subscriptionId = await pushService.storeSubscription(
+      const subscriptionId = await c.env.PUSH_SERVICE.storeSubscription(
         userId,
         subscription,
         userAgent,
@@ -58,7 +55,7 @@ export function registerPushRoutes(app: Hono<{ Bindings: Env }>) {
         return c.json({ error: 'User not authenticated' }, 401);
       }
 
-      await pushService.deactivateSubscription(subscriptionId);
+      await c.env.PUSH_SERVICE.deactivateSubscription(subscriptionId);
 
       return c.json({
         success: true,
@@ -84,7 +81,7 @@ export function registerPushRoutes(app: Hono<{ Bindings: Env }>) {
         return c.json({ error: 'User not authenticated' }, 401);
       }
 
-      const subscriptions = await pushService.getUserSubscriptions(userId);
+      const subscriptions = await c.env.PUSH_SERVICE.getUserSubscriptions(userId);
 
       return c.json({
         success: true,
@@ -111,7 +108,7 @@ export function registerPushRoutes(app: Hono<{ Bindings: Env }>) {
         return c.json({ error: 'User not authenticated' }, 401);
       }
 
-      const subscriptions = await pushService.getUserSubscriptions(userId);
+      const subscriptions = await c.env.PUSH_SERVICE.getUserSubscriptions(userId);
       if (subscriptions.length === 0) {
         return c.json({ error: 'No active subscriptions found' }, 404);
       }
@@ -126,7 +123,7 @@ export function registerPushRoutes(app: Hono<{ Bindings: Env }>) {
 
       let successCount = 0;
       for (const subscription of subscriptions) {
-        const success = await pushService.sendNotification(
+        const success = await c.env.PUSH_SERVICE.sendNotification(
           {
             endpoint: subscription.endpoint,
             keys: {
@@ -196,7 +193,7 @@ export function registerPushRoutes(app: Hono<{ Bindings: Env }>) {
       }>();
 
       if (transaction) {
-        await pushService.sendTransactionResult(
+        await c.env.PUSH_SERVICE.sendTransactionResult(
           parseInt(transactionId),
           transaction.family_number,
           transaction.amount,
@@ -223,7 +220,7 @@ export function registerPushRoutes(app: Hono<{ Bindings: Env }>) {
         return c.json({ error: 'User not authenticated' }, 401);
       }
 
-      const settings = await pushService.getUserNotificationSettings(userId);
+      const settings = await c.env.PUSH_SERVICE.getUserNotificationSettings(userId);
 
       return c.json({
         success: true,
@@ -249,7 +246,7 @@ export function registerPushRoutes(app: Hono<{ Bindings: Env }>) {
         return c.json({ error: 'Setting key and value required' }, 400);
       }
 
-      await pushService.updateUserNotificationSetting(userId, settingKey, settingValue);
+      await c.env.PUSH_SERVICE.updateUserNotificationSetting(userId, settingKey, settingValue);
 
       return c.json({
         success: true,
