@@ -1,0 +1,3 @@
+# This is a placeholder for the notification badge
+# In production, this would be a real 72x72 PNG file
+# For now, we'll use a simple base64 encoded badge

@@ -3,7 +3,7 @@ compatibility_date = "2025-04-03"
 main = "./src/worker.ts"
 
 compatibility_flags = ["nodejs_compat"]
-assets = { not_found_handling = "single-page-application",run_worker_first = ["/api/*"] }
+assets = { directory = "./dist/client", not_found_handling = "single-page-application", run_worker_first = ["/api/*"] }
 
 
 # These are for the WebAuthn Relying Party (RP) configuration.
@@ -11,13 +11,19 @@ assets = { not_found_handling = "single-page-application",run_worker_first = ["/
 [vars]
 RP_ID = "localhost"
 RP_NAME = "Village Payment Auth"
-RP_ORIGIN = "http://localhost:5173"
-JWT_SECRET = "your-super-secret-jwt-key-change-this-in-production"
+RP_ORIGIN = "https://localhost:5173"
+VAPID_PUBLIC_KEY = "BJ1zmk8flcOTHoUBMnLw-OiKQ4Ykj0e67ThbzkGvoP8gYAZ7xcfX4dy_ZKXU3NQcfdCQd4Pux7QccUpcc3XHZb0"
+VAPID_SUBJECT = "mailto:admin@village-payment.com"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "village_payments"
 database_id = "d3c3d241-54ad-4a81-bf15-6556fe27c3ac"
+
+[[d1_databases]]
+binding = "DBJOURNAL"
+database_name = "vpcs-journal"
+database_id = "784270a8-ffe1-4115-b7fb-7d89b5eae768"
 
 [[env.production.queues.producers]]
 binding = "AUTO_APPROVAL_QUEUE"

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../auth-context'
 import { InviteLink } from './InviteLink'
+import { PushNotificationSettings } from './PushNotificationSettings'
 
 interface FamilySettings {
   family_number: string | null
@@ -128,42 +129,41 @@ export function UserProfile() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-2xl mx-auto px-4">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
+            <div className="space-y-4">
+              <div className="h-4 bg-gray-200 rounded"></div>
+              <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+              <div className="h-4 bg-gray-200 rounded w-4/6"></div>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">User Profile</h1>
-        
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">User Profile</h1>
+          <p className="text-gray-600 mt-2">Manage your family settings and preferences</p>
+        </div>
+
         {message && (
-          <div className={`mb-4 p-3 rounded-md ${
-            message.type === 'success' 
-              ? 'bg-green-50 text-green-800 border border-green-200' 
-              : 'bg-red-50 text-red-800 border border-red-200'
+          <div className={`p-4 rounded-lg mb-6 ${
+            message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
           }`}>
             {message.text}
           </div>
         )}
 
-        <div className="space-y-6">
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="font-semibold text-gray-900 mb-2">Account Information</h3>
-            <div className="space-y-2 text-sm text-gray-600">
-              <div>
-                <span className="font-medium">Username:</span> {user?.username}
-              </div>
-              <div>
-                <span className="font-medium">User ID:</span> {user?.id}
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Family Settings</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Family Settings */}
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Family Settings</h2>
             
             <form onSubmit={handleFamilySettingsSubmit} className="space-y-4">
               <div>
@@ -206,8 +206,9 @@ export function UserProfile() {
             </form>
           </div>
 
-          <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Spending Limits</h3>
+          {/* Spending Limits */}
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Spending Limits</h2>
             
             <form onSubmit={handleLimitSubmit} className="space-y-4">
               <div>
@@ -239,48 +240,54 @@ export function UserProfile() {
               </button>
             </form>
           </div>
+        </div>
 
-          <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Current Settings</h3>
-            <div className="bg-blue-50 p-4 rounded-lg mb-4">
-              <div className="space-y-2 text-sm">
-                <div>
-                  <span className="font-medium text-blue-900">Family Number:</span>
-                  <span className="text-blue-700 ml-2">
-                    {settings.family_number || 'Not set'}
-                  </span>
-                </div>
-                <div>
-                  <span className="font-medium text-blue-900">Family Surname:</span>
-                  <span className="text-blue-700 ml-2">
-                    {settings.surname || 'Not set'}
-                  </span>
-                </div>
-                <div>
-                  <span className="font-medium text-blue-900">Default Limit:</span>
-                  <span className="text-blue-700 ml-2">
-                    ₪{settings.default_limit.toFixed(2)}
-                  </span>
-                </div>
+        {/* Push Notifications */}
+        <div className="mt-8">
+          <PushNotificationSettings />
+        </div>
+
+        {/* Current Settings */}
+        <div className="mt-8 bg-white p-6 rounded-lg shadow">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Current Settings</h2>
+          <div className="bg-blue-50 p-4 rounded-lg mb-4">
+            <div className="space-y-2 text-sm">
+              <div>
+                <span className="font-medium text-blue-900">Family Number:</span>
+                <span className="text-blue-700 ml-2">
+                  {settings.family_number || 'Not set'}
+                </span>
+              </div>
+              <div>
+                <span className="font-medium text-blue-900">Family Surname:</span>
+                <span className="text-blue-700 ml-2">
+                  {settings.surname || 'Not set'}
+                </span>
+              </div>
+              <div>
+                <span className="font-medium text-blue-900">Default Limit:</span>
+                <span className="text-blue-700 ml-2">
+                  ₪{settings.default_limit.toFixed(2)}
+                </span>
               </div>
             </div>
-
-            {settings.family_number && settings.surname && (
-              <div className="bg-green-50 p-4 rounded-lg">
-                <h4 className="font-medium text-green-900 mb-2">Invite Family Members</h4>
-                <p className="text-sm text-green-700 mb-3">
-                  Create an invite link to allow other devices to join your family. 
-                  They'll be able to receive notifications and approve payments.
-                </p>
-                <button
-                  onClick={() => setShowInviteModal(true)}
-                  className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
-                >
-                  Create Invite Link
-                </button>
-              </div>
-            )}
           </div>
+
+          {settings.family_number && settings.surname && (
+            <div className="bg-green-50 p-4 rounded-lg">
+              <h4 className="font-medium text-green-900 mb-2">Invite Family Members</h4>
+              <p className="text-sm text-green-700 mb-3">
+                Create an invite link to allow other devices to join your family. 
+                They'll be able to receive notifications and approve payments.
+              </p>
+              <button
+                onClick={() => setShowInviteModal(true)}
+                className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+              >
+                Create Invite Link
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

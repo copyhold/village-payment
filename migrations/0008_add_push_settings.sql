@@ -12,13 +12,5 @@ CREATE TABLE push_notification_settings (
     UNIQUE(user_id, setting_key)
 );
 
--- Insert default settings (these will be copied to each user when they first access settings)
-INSERT INTO push_notification_settings (user_id, setting_key, setting_value) VALUES
-    ('default', 'transaction_approvals', 'true'),
-    ('default', 'daily_summaries', 'false'),
-    ('default', 'limit_alerts', 'true'),
-    ('default', 'quiet_hours_start', '22:00'),
-    ('default', 'quiet_hours_end', '08:00');
-
 -- Add index for better performance
 CREATE INDEX idx_push_settings_user_id ON push_notification_settings(user_id);

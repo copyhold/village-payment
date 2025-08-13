@@ -2,4 +2,5 @@
 
 -- Add new_user_id column to one_time_links table
 -- This stores the ID of the user accepting the invite, separate from the inviter's user_id
-ALTER TABLE one_time_links ADD COLUMN new_user_id TEXT;
+-- Column already exists, so this is a no-op migration
+SELECT 1;

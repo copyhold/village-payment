@@ -91,9 +91,9 @@ export class PushClient {
       await fetch('/api/push/subscribe', {
         method: 'DELETE',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.getAuthToken()}`
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify({ subscriptionId })
       });
 
@@ -107,9 +107,7 @@ export class PushClient {
   async getUserSubscriptions(): Promise<any[]> {
     try {
       const response = await fetch('/api/push/subscriptions', {
-        headers: {
-          'Authorization': `Bearer ${this.getAuthToken()}`
-        }
+        credentials: 'include'
       });
 
       if (response.ok) {
@@ -127,9 +125,7 @@ export class PushClient {
     try {
       const response = await fetch('/api/push/send-test', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.getAuthToken()}`
-        }
+        credentials: 'include'
       });
 
       if (response.ok) {
@@ -147,9 +143,7 @@ export class PushClient {
   async getNotificationSettings(): Promise<Record<string, string>> {
     try {
       const response = await fetch('/api/push/settings', {
-        headers: {
-          'Authorization': `Bearer ${this.getAuthToken()}`
-        }
+        credentials: 'include'
       });
 
       if (response.ok) {
@@ -168,9 +162,9 @@ export class PushClient {
       const response = await fetch('/api/push/settings', {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.getAuthToken()}`
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify({ settingKey, settingValue })
       });
 
@@ -188,9 +182,9 @@ export class PushClient {
     await fetch('/api/push/subscribe', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.getAuthToken()}`
+        'Content-Type': 'application/json'
       },
+      credentials: 'include',
       body: JSON.stringify({
         subscription,
         userAgent,
@@ -216,10 +210,6 @@ export class PushClient {
     }
     
     return platform || 'Unknown Device';
-  }
-
-  private getAuthToken(): string {
-    return localStorage.getItem('authToken') || '';
   }
 
   private urlBase64ToUint8Array(base64String: string): Uint8Array {

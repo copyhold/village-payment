@@ -2,11 +2,12 @@ import { Hono } from 'hono';
 import { Env } from '../env';
 import { PushService } from '../services/push-service';
 import { PushSubscription } from '../types';
+import { jwtMiddleware } from '../middleware/jwt';
 
 export function registerPushRoutes(app: Hono<{ Bindings: Env }>) {
   const pushService = new PushService(app.env);
 
-  app.post('/api/push/subscribe', async (c) => {
+  app.post('/api/push/subscribe', jwtMiddleware, async (c) => {
     try {
       const { subscription, userAgent, deviceName } = await c.req.json();
       
@@ -19,7 +20,8 @@ export function registerPushRoutes(app: Hono<{ Bindings: Env }>) {
         return c.json({ error: 'Invalid subscription' }, 400);
       }
 
-      const userId = c.get('userId');
+      const jwtPayload = c.get('jwtPayload');
+      const userId = jwtPayload?.sub;
       if (!userId) {
         return c.json({ error: 'User not authenticated' }, 401);
       }
@@ -42,7 +44,7 @@ export function registerPushRoutes(app: Hono<{ Bindings: Env }>) {
     }
   });
 
-  app.delete('/api/push/subscribe', async (c) => {
+  app.delete('/api/push/subscribe', jwtMiddleware, async (c) => {
     try {
       const { subscriptionId } = await c.req.json();
       
@@ -50,7 +52,8 @@ export function registerPushRoutes(app: Hono<{ Bindings: Env }>) {
         return c.json({ error: 'Subscription ID required' }, 400);
       }
 
-      const userId = c.get('userId');
+      const jwtPayload = c.get('jwtPayload');
+      const userId = jwtPayload?.sub;
       if (!userId) {
         return c.json({ error: 'User not authenticated' }, 401);
       }
@@ -73,9 +76,10 @@ export function registerPushRoutes(app: Hono<{ Bindings: Env }>) {
     });
   });
 
-  app.get('/api/push/subscriptions', async (c) => {
+  app.get('/api/push/subscriptions', jwtMiddleware, async (c) => {
     try {
-      const userId = c.get('userId');
+      const jwtPayload = c.get('jwtPayload');
+      const userId = jwtPayload?.sub;
       if (!userId) {
         return c.json({ error: 'User not authenticated' }, 401);
       }
@@ -99,9 +103,10 @@ export function registerPushRoutes(app: Hono<{ Bindings: Env }>) {
     }
   });
 
-  app.post('/api/push/send-test', async (c) => {
+  app.post('/api/push/send-test', jwtMiddleware, async (c) => {
     try {
-      const userId = c.get('userId');
+      const jwtPayload = c.get('jwtPayload');
+      const userId = jwtPayload?.sub;
       if (!userId) {
         return c.json({ error: 'User not authenticated' }, 401);
       }
@@ -145,7 +150,7 @@ export function registerPushRoutes(app: Hono<{ Bindings: Env }>) {
     }
   });
 
-  app.post('/api/push/respond/:transactionId', async (c) => {
+  app.post('/api/push/respond/:transactionId', jwtMiddleware, async (c) => {
     try {
       const transactionId = c.req.param('transactionId');
       const { action, reason } = await c.req.json();
@@ -154,7 +159,8 @@ export function registerPushRoutes(app: Hono<{ Bindings: Env }>) {
         return c.json({ error: 'Invalid action' }, 400);
       }
 
-      const userId = c.get('userId');
+      const jwtPayload = c.get('jwtPayload');
+      const userId = jwtPayload?.sub;
       if (!userId) {
         return c.json({ error: 'User not authenticated' }, 401);
       }
@@ -209,9 +215,10 @@ export function registerPushRoutes(app: Hono<{ Bindings: Env }>) {
     }
   });
 
-  app.get('/api/push/settings', async (c) => {
+  app.get('/api/push/settings', jwtMiddleware, async (c) => {
     try {
-      const userId = c.get('userId');
+      const jwtPayload = c.get('jwtPayload');
+      const userId = jwtPayload?.sub;
       if (!userId) {
         return c.json({ error: 'User not authenticated' }, 401);
       }
@@ -228,9 +235,10 @@ export function registerPushRoutes(app: Hono<{ Bindings: Env }>) {
     }
   });
 
-  app.put('/api/push/settings', async (c) => {
+  app.put('/api/push/settings', jwtMiddleware, async (c) => {
     try {
-      const userId = c.get('userId');
+      const jwtPayload = c.get('jwtPayload');
+      const userId = jwtPayload?.sub;
       if (!userId) {
         return c.json({ error: 'User not authenticated' }, 401);
       }

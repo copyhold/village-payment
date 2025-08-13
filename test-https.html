@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTTPS and Push Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 20px; margin: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>HTTPS and Push Notification Test</h1>
+    
+    <div id="status"></div>
+    
+    <button onclick="testHTTPS()">Test HTTPS</button>
+    <button onclick="testPushSupport()">Test Push Support</button>
+    <button onclick="testServiceWorker()">Test Service Worker</button>
+    <button onclick="testVAPID()">Test VAPID Key</button>
+    
+    <script>
+        function addStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.textContent = message;
+            statusDiv.appendChild(div);
+        }
+        
+        function testHTTPS() {
+            if (location.protocol === 'https:') {
+                addStatus('✅ HTTPS is enabled and working!', 'success');
+            } else {
+                addStatus('❌ HTTPS is not enabled. Current protocol: ' + location.protocol, 'error');
+            }
+        }
+        
+        function testPushSupport() {
+            if ('serviceWorker' in navigator) {
+                addStatus('✅ Service Worker API is supported', 'success');
+            } else {
+                addStatus('❌ Service Worker API is not supported', 'error');
+            }
+            
+            if ('PushManager' in window) {
+                addStatus('✅ Push API is supported', 'success');
+            } else {
+                addStatus('❌ Push API is not supported', 'error');
+            }
+            
+            if ('Notification' in window) {
+                addStatus('✅ Notification API is supported', 'success');
+            } else {
+                addStatus('❌ Notification API is not supported', 'error');
+            }
+        }
+        
+        async function testServiceWorker() {
+            try {
+                const registration = await navigator.serviceWorker.register('/sw.js');
+                addStatus('✅ Service Worker registered successfully', 'success');
+                addStatus('Service Worker scope: ' + registration.scope, 'info');
+            } catch (error) {
+                addStatus('❌ Service Worker registration failed: ' + error.message, 'error');
+            }
+        }
+        
+        async function testVAPID() {
+            try {
+                const response = await fetch('/api/push/public-key');
+                if (response.ok) {
+                    const data = await response.json();
+                    addStatus('✅ VAPID public key retrieved successfully', 'success');
+                    addStatus('Key length: ' + data.publicKey.length + ' characters', 'info');
+                } else {
+                    addStatus('❌ Failed to get VAPID public key: ' + response.status, 'error');
+                }
+            } catch (error) {
+                addStatus('❌ Error getting VAPID key: ' + error.message, 'error');
+            }
+        }
+        
+        // Auto-run HTTPS test on page load
+        window.addEventListener('load', testHTTPS);
+    </script>
+</body>
+</html>

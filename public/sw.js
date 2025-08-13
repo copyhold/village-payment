@@ -62,9 +62,9 @@ self.addEventListener('notificationclick', function(event) {
         fetch(`/api/push/respond/${transactionId}`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${getStoredToken()}`
+            'Content-Type': 'application/json'
           },
+          credentials: 'include',
           body: JSON.stringify({
             action: action,
             reason: action === 'decline' ? 'Declined via notification' : null
@@ -135,19 +135,8 @@ self.addEventListener('notificationclose', function(event) {
   }
 });
 
-function getStoredToken() {
-  return new Promise((resolve) => {
-    self.clients.matchAll().then(clients => {
-      for (const client of clients) {
-        client.postMessage({ type: 'GET_TOKEN' });
-      }
-      setTimeout(() => resolve(null), 100);
-    });
-  });
-}
-
 self.addEventListener('message', function(event) {
-  if (event.data && event.data.type === 'TOKEN_RESPONSE') {
-    self.token = event.data.token;
+  if (event.data && event.data.type === 'GET_TOKEN') {
+    event.ports[0].postMessage({ token: self.token });
   }
 });
