@@ -121,7 +121,7 @@ CREATE TABLE one_time_links (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );```
 
-#### DBJOURNAL Database
+#### DB Database
 ```sql
 -- Payment transactions table
 CREATE TABLE transactions (

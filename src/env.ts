@@ -1,6 +1,6 @@
 export type Env = {
   DB: import('@cloudflare/workers-types').D1Database;
-  DBJOURNAL: import('@cloudflare/workers-types').D1Database;
+  DB: import('@cloudflare/workers-types').D1Database;
   RP_ID?: string;
   RP_NAME: string;
   RP_ORIGIN?: string;

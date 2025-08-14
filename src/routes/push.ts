@@ -165,26 +165,26 @@ export function registerPushRoutes(app: Hono<{ Bindings: Env }>) {
       const now = new Date().toISOString();
       
       if (action === 'approve') {
-        await c.env.DBJOURNAL.prepare(`
+        await c.env.DB.prepare(`
           UPDATE transactions 
           SET status = 'approved', approved_at = ?, approved_by_user_id = ?
           WHERE id = ? AND status = 'pending'
         `).bind(now, userId, transactionId).run();
       } else {
-        await c.env.DBJOURNAL.prepare(`
+        await c.env.DB.prepare(`
           UPDATE transactions 
           SET status = 'declined', declined_at = ?, declined_by_user_id = ?, decline_reason = ?
           WHERE id = ? AND status = 'pending'
         `).bind(now, userId, reason || null, transactionId).run();
       }
 
-      await c.env.DBJOURNAL.prepare(`
+      await c.env.DB.prepare(`
         UPDATE notification_log 
         SET responded_at = ?, response_action = ?
         WHERE transaction_id = ?
       `).bind(now, action, transactionId).run();
 
-      const transaction = await c.env.DBJOURNAL.prepare(`
+      const transaction = await c.env.DB.prepare(`
         SELECT * FROM transactions WHERE id = ?
       `).bind(transactionId).first<{
         family_number: string;

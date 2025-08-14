@@ -2,11 +2,7 @@ import { WorkerEntrypoint } from "cloudflare:workers";
 import { buildPushPayload } from '@block65/webcrypto-web-push';
 import { Env, PushSubscription, PushSubscriptionRecord, NotificationTemplate, NotificationPayload, NotificationLogRecord } from './types';
 
-export class PushService extends WorkerEntrypoint {
-  constructor(private env: Env) {
-    super();
-  }
-
+export default class PushService extends WorkerEntrypoint {
   async validateSubscription(subscription: PushSubscription): Promise<boolean> {
     if (!subscription.endpoint || !subscription.keys?.p256dh || !subscription.keys?.auth) {
       return false;
@@ -159,14 +155,14 @@ export class PushService extends WorkerEntrypoint {
     const now = new Date().toISOString();
     
     if (success) {
-      await this.env.DBJOURNAL.prepare(`
+      await this.env.DB.prepare(`
         INSERT INTO notification_log (
           transaction_id, subscription_id, subscription_endpoint, 
           sent_at, delivered_at
         ) VALUES (?, ?, ?, ?, ?)
       `).bind(transactionId, subscriptionId, subscriptionEndpoint, now, now).run();
     } else {
-      await this.env.DBJOURNAL.prepare(`
+      await this.env.DB.prepare(`
         INSERT INTO notification_log (
           transaction_id, subscription_id, subscription_endpoint, 
           sent_at, failed_at, error_message
@@ -406,4 +402,8 @@ export class PushService extends WorkerEntrypoint {
       lastUsed: subscription.last_used
     };
   }
+
+  async fetch() {
+    return new Response("Hello from push worker");
+  } 
 }

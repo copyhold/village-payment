@@ -73,7 +73,7 @@ export interface VendorSurnameCache {
 }
 
 /**
- * Payment transaction. Corresponds to the `transactions` table in DBJOURNAL.
+ * Payment transaction. Corresponds to the `transactions` table in DB.
  */
 export interface Transaction {
   id?: number;
@@ -89,7 +89,7 @@ export interface Transaction {
 }
 
 /**
- * Notification log entry. Corresponds to the `notification_log` table in DBJOURNAL.
+ * Notification log entry. Corresponds to the `notification_log` table in DB.
  */
 export interface NotificationLog {
   id?: number;

@@ -23,7 +23,7 @@ The push notification system enables real-time communication between the VPCS an
 - `push_notification_settings` - User preferences for notifications
 - `notification_templates` - Reusable notification content templates
 
-#### DBJOURNAL Database
+#### DB Database
 - `notification_log` - Tracks notification delivery and responses
 - `transactions` - Enhanced with approval workflow tracking
 
@@ -40,7 +40,7 @@ VAPID_PRIVATE_KEY = "your-vapid-private-key"
 VAPID_SUBJECT = "mailto:your-email@example.com"
 
 [[d1_databases]]
-binding = "DBJOURNAL"
+binding = "DB"
 database_name = "vpcs-journal"
 database_id = "your-journal-database-id"
 ```

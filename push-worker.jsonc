@@ -12,11 +12,6 @@
       "binding": "DB",
       "database_name": "village_payments",
       "database_id": "d3c3d241-54ad-4a81-bf15-6556fe27c3ac"
-    },
-    {
-      "binding": "DBJOURNAL",
-      "database_name": "vpcs-journal",
-      "database_id": "784270a8-ffe1-4115-b7fb-7d89b5eae768"
     }
   ],
   "env": {

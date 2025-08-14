@@ -156,14 +156,14 @@ export class PushService {
     const now = new Date().toISOString();
     
     if (success) {
-      await this.env.DBJOURNAL.prepare(`
+      await this.env.DB.prepare(`
         INSERT INTO notification_log (
           transaction_id, subscription_id, subscription_endpoint, 
           sent_at, delivered_at
         ) VALUES (?, ?, ?, ?, ?)
       `).bind(transactionId, subscriptionId, subscriptionEndpoint, now, now).run();
     } else {
-      await this.env.DBJOURNAL.prepare(`
+      await this.env.DB.prepare(`
         INSERT INTO notification_log (
           transaction_id, subscription_id, subscription_endpoint, 
           sent_at, failed_at, error_message
