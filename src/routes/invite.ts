@@ -113,6 +113,7 @@ export function registerInviteRoutes(app: Hono<{ Bindings: Env }>) {
 
       return c.json({ ...options, userId: newUser.id, family_number: (link as any).family_number, surname: (link as any).surname });
     } catch (_err) {
+      console.error(_err); 
       return c.json({ error: 'Failed to start invite registration' }, 500);
     }
   });

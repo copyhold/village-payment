@@ -8,10 +8,11 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*"]
   },
+  "observability": {
+    "enabled": true
+  },
   "vars": {
     "RP_NAME": "Village Payment Auth",
-    "VAPID_PUBLIC_KEY": "BJ1zmk8flcOTHoUBMnLw-OiKQ4Ykj0e67ThbzkGvoP8gYAZ7xcfX4dy_ZKXU3NQcfdCQd4Pux7QccUpcc3XHZb0",
-    "VAPID_SUBJECT": "mailto:admin@village-payment.com"
   },
   "d1_databases": [
     {
@@ -30,8 +31,6 @@
     "production": {
       "vars": {
         "RP_NAME": "Village Payment Auth",
-        "VAPID_PUBLIC_KEY": "BJ1zmk8flcOTHoUBMnLw-OiKQ4Ykj0e67ThbzkGvoP8gYAZ7xcfX4dy_ZKXU3NQcfdCQd4Pux7QccUpcc3XHZb0",
-        "VAPID_SUBJECT": "mailto:admin@village-payment.com"
       },
       "queues": {
         "producers": [

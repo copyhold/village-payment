@@ -68,8 +68,9 @@ export function registerPushRoutes(app: Hono<{ Bindings: Env }>) {
   });
 
   app.get('/api/push/public-key', async (c) => {
+    const publicKey = await c.env.PUSH_SERVICE.getVAPIDPublicKey();
     return c.json({
-      publicKey: c.env.VAPID_PUBLIC_KEY
+      publicKey,
     });
   });
 

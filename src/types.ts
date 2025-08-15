@@ -8,7 +8,6 @@ export interface Env {
   VAPID_PRIVATE_KEY: string;
   VAPID_SUBJECT: string;
   DB: D1Database;
-  DB: D1Database;
 }
 
 // Используем типы из @cloudflare/workers-types для D1 (D1Database/D1PreparedStatement),

@@ -82,6 +82,10 @@ export default class PushService extends WorkerEntrypoint {
     return result.results;
   }
 
+  getVAPIDPublicKey() {
+    return this.env.VAPID_PUBLIC_KEY;
+  } 
+  
   async getNotificationTemplate(templateKey: string): Promise<NotificationTemplate | null> {
     const result = await this.env.DB.prepare(`
       SELECT * FROM notification_templates 

@@ -7,6 +7,9 @@
     "VAPID_PUBLIC_KEY": "BJ1zmk8flcOTHoUBMnLw-OiKQ4Ykj0e67ThbzkGvoP8gYAZ7xcfX4dy_ZKXU3NQcfdCQd4Pux7QccUpcc3XHZb0",
     "VAPID_SUBJECT": "mailto:admin@village-payment.com"
   },
+  "observability": {
+    "enabled": true
+  },
   "d1_databases": [
     {
       "binding": "DB",
@@ -17,20 +20,15 @@
   "env": {
     "production": {
       "vars": {
-        "VAPID_PUBLIC_KEY": "BJ1zmk8flcOTHoUBMnLw-OiKQ4Ykj0e67ThbzkGvoP8gYAZ7xcfX4dy_ZKXU3NQcfdCQd4Pux7QccUpcc3XHZb0",
-        "VAPID_SUBJECT": "mailto:admin@village-payment.com"
       }
     },
     "staging": {
       "vars": {
-        "VAPID_PUBLIC_KEY": "BJ1zmk8flcOTHoUBMnLw-OiKQ4Ykj0e67ThbzkGvoP8gYAZ7xcfX4dy_ZKXU3NQcfdCQd4Pux7QccUpcc3XHZb0",
-        "VAPID_SUBJECT": "mailto:admin@village-payment.com"
       }
     },
     "development": {
       "vars": {
-        "VAPID_PUBLIC_KEY": "BJ1zmk8flcOTHoUBMnLw-OiKQ4Ykj0e67ThbzkGvoP8gYAZ7xcfX4dy_ZKXU3NQcfdCQd4Pux7QccUpcc3XHZb0",
-        "VAPID_SUBJECT": "mailto:admin@village-payment.com"
+				"JWT_SECRET":"adsfadsasfdasfd"
       }
     }
   }
