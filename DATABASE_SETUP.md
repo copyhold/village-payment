@@ -1,4 +1,6 @@
-# Database Setup for Village Payment Control System (VPCS)
+# Database Setup for Village Payment Control System (VPCS)!
+![WhatsApp Image 2025-08-31 at 10.22.00.jpeg]({{site.baseurl}}/WhatsApp Image 2025-08-31 at 10.22.00.jpeg)
+
 
 ## Overview
 
@@ -162,4 +164,4 @@ After database setup, implement:
 1. Push notification system
 2. Durable Objects for real-time approval workflow
 3. Frontend components for family settings and vendor interface
-4. Transaction history and analytics 
+4. Transaction history and analytics
